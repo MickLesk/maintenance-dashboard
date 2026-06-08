@@ -14,7 +14,6 @@
     "prConcurrentLimit": 5,
     "rangeStrategy": "bump",
     "minimumReleaseAge": "3 days",
-    "stabilityDays": 3,
     "rebaseWhen": "behind-base-branch",
     "lockFileMaintenance": {
         "enabled": true,
@@ -42,11 +41,11 @@
             "groupName": "lit frontend"
         },
         {
-            "description": "Group GitHub and Forgejo actions",
+            "description": "Group Actions",
             "matchManagers": [
                 "github-actions"
             ],
-            "groupName": "github actions"
+            "groupName": "actions"
         },
         {
             "description": "Do not automerge major updates",
