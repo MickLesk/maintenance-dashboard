@@ -1,6 +1,6 @@
 {
   "name": "maintenance-dashboard",
-  "version": "2.1.0",
+  "version": "1.0.0",
   "description": "Home Assistant Maintenance Dashboard custom integration with sidebar panel and backend storage.",
   "type": "module",
   "scripts": {
