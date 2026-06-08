@@ -11,25 +11,34 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: node:22-bookworm
+      image: node:24-alpine
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Python
+      - name: Install system dependencies
         run: |
-          apt-get update
-          apt-get install -y python3
+          apk add --no-cache python3 git
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Build frontend
         run: npm run build
 
       - name: Verify compiled frontend is committed
         run: |
-          git diff --exit-code custom_components/maintenance_dashboard/www/maintenance-dashboard-panel.js
+          if ! git diff --quiet -- custom_components/maintenance_dashboard/www/maintenance-dashboard-panel.js; then
+            echo "Compiled frontend is out of date."
+            echo "Run locally:"
+            echo "  npm ci"
+            echo "  npm run build"
+            echo "  git add custom_components/maintenance_dashboard/www/maintenance-dashboard-panel.js"
+            echo "  git commit -m 'chore: update frontend build artifact'"
+            git diff -- custom_components/maintenance_dashboard/www/maintenance-dashboard-panel.js | head -n 160
+            exit 1
+          fi
 
       - name: Compile Python files
         run: python3 -m compileall custom_components/maintenance_dashboard

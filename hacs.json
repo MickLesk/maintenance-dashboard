@@ -1,6 +1,5 @@
 {
   "name": "Maintenance Dashboard",
   "render_readme": true,
-  "domains": ["maintenance_dashboard"],
   "homeassistant": "2025.1.0"
 }

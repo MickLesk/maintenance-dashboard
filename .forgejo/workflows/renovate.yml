@@ -2,8 +2,6 @@ name: Renovate
 
 on:
   schedule:
-    # Monday-Friday at 07:30 Europe/Berlin-ish.
-    # Cron is UTC, so this is 06:30 UTC.
     - cron: "30 6 * * 1-5"
   workflow_dispatch:
     inputs:
@@ -31,6 +29,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Validate secrets
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [ -z "$RENOVATE_TOKEN" ]; then
+            echo "RENOVATE_TOKEN is missing or empty."
+            exit 1
+          fi
 
       - name: Run Renovate
         env:
