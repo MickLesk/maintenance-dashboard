@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "lit": "^3.3.0"
+    "lit": "^3.3.3"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^6.1.0",
