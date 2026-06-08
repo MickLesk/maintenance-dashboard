@@ -1,0 +1,75 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        ":dependencyDashboard",
+        ":semanticCommits",
+        ":semanticCommitTypeAll(chore)",
+        ":timezone(Europe/Berlin)"
+    ],
+    "labels": [
+        "dependencies"
+    ],
+    "prHourlyLimit": 2,
+    "prConcurrentLimit": 5,
+    "rangeStrategy": "bump",
+    "minimumReleaseAge": "3 days",
+    "stabilityDays": 3,
+    "rebaseWhen": "behind-base-branch",
+    "lockFileMaintenance": {
+        "enabled": true,
+        "schedule": [
+            "before 6am on monday"
+        ]
+    },
+    "packageRules": [
+        {
+            "description": "Group Vite ecosystem packages",
+            "matchPackageNames": [
+                "vite",
+                "@vitejs/**",
+                "typescript"
+            ],
+            "groupName": "vite toolchain",
+            "automerge": false
+        },
+        {
+            "description": "Group Lit packages",
+            "matchPackageNames": [
+                "lit",
+                "@lit/**"
+            ],
+            "groupName": "lit frontend"
+        },
+        {
+            "description": "Group GitHub and Forgejo actions",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "groupName": "github actions"
+        },
+        {
+            "description": "Do not automerge major updates",
+            "matchUpdateTypes": [
+                "major"
+            ],
+            "automerge": false,
+            "dependencyDashboardApproval": true
+        },
+        {
+            "description": "Allow patch/minor automerge for dev dependencies after tests pass",
+            "matchDepTypes": [
+                "devDependencies"
+            ],
+            "matchUpdateTypes": [
+                "patch",
+                "minor"
+            ],
+            "automerge": true,
+            "automergeType": "pr"
+        }
+    ],
+    "postUpdateOptions": [
+        "npmDedupe"
+    ]
+}
