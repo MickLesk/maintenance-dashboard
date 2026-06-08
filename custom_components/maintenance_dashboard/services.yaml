@@ -1,0 +1,53 @@
+mark_done:
+  name: Mark maintenance task done
+  description: Mark a maintenance task as completed and persist a history snapshot.
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    done_at:
+      name: Done at
+      required: false
+      selector:
+        datetime:
+
+snooze:
+  name: Snooze maintenance task
+  description: Snooze a maintenance task for a number of days.
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    days:
+      name: Days
+      required: true
+      default: 7
+      selector:
+        number:
+          min: 1
+          max: 365
+          mode: box
+
+clear_snooze:
+  name: Clear maintenance task snooze
+  description: Remove the snooze state from a maintenance task.
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+
+restore_backup:
+  name: Restore backup
+  description: Restore a stored maintenance dashboard backup snapshot.
+  fields:
+    backup_id:
+      name: Backup ID
+      required: true
+      selector:
+        text:
