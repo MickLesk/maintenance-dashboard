@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Maintenance Dashboard",
+        "description": "Create a dedicated sidebar panel for home maintenance tasks.",
+        "data": {
+          "title": "Title"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Maintenance Dashboard is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Maintenance Dashboard options",
+        "data": {
+          "history_retention": "Maximum history entries",
+          "show_in_sidebar": "Show in sidebar"
+        }
+      }
+    }
+  }
+}
