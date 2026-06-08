@@ -1,0 +1,35 @@
+name: Build and Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: node:22-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        run: |
+          apt-get update
+          apt-get install -y python3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Verify compiled frontend is committed
+        run: |
+          git diff --exit-code custom_components/maintenance_dashboard/www/maintenance-dashboard-panel.js
+
+      - name: Compile Python files
+        run: python3 -m compileall custom_components/maintenance_dashboard
