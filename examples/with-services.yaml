@@ -1,0 +1,18 @@
+# Beispiele für Service Calls
+
+service: maintenance_dashboard.mark_done
+data:
+  task_id: robot_mower_blades
+
+---
+
+service: maintenance_dashboard.snooze
+data:
+  task_id: robot_mower_blades
+  days: 7
+
+---
+
+service: maintenance_dashboard.clear_snooze
+data:
+  task_id: robot_mower_blades

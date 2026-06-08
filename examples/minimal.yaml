@@ -1,0 +1,7 @@
+# v2.1 benötigt keine Lovelace YAML-Konfiguration.
+# Nach Installation der Integration erscheint das Panel automatisch in der Sidebar.
+#
+# Installation:
+# cp -r custom_components/maintenance_dashboard /config/custom_components/
+# Home Assistant neu starten
+# Einstellungen → Geräte & Dienste → Integration hinzufügen → Maintenance Dashboard
