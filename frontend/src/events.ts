@@ -1,0 +1,84 @@
+// Event binding and UI interaction handlers.
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _bind() {
+    this.shadowRoot.querySelectorAll("[data-view]").forEach(el => el.addEventListener("click", () => { this._view = el.dataset.view; this._snoozeMenu = null; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='create']").forEach(el => el.addEventListener("click", () => this._openCreate()));
+    this.shadowRoot.querySelectorAll("[data-action='close']").forEach(el => el.addEventListener("click", () => { this._dialog = null; this._error = ""; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='save']").forEach(el => el.addEventListener("click", () => this._save()));
+    this.shadowRoot.querySelectorAll("[data-action='diagnostics']").forEach(el => el.addEventListener("click", () => { this._diagnostics = true; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='history-dialog']").forEach(el => el.addEventListener("click", () => { this._historyDialog = true; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-history']").forEach(el => el.addEventListener("click", () => { this._historyDialog = false; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-diagnostics']").forEach(el => el.addEventListener("click", () => { this._diagnostics = false; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='data-dialog']").forEach(el => el.addEventListener("click", () => { this._dataDialog = true; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-data-dialog']").forEach(el => el.addEventListener("click", () => { this._dataDialog = false; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='notification-dialog']").forEach(el => el.addEventListener("click", () => { this._notificationDialog = true; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-notification-dialog']").forEach(el => el.addEventListener("click", () => { this._notificationDialog = false; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-template-preview']").forEach(el => el.addEventListener("click", () => { this._templatePreview = null; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='close-completion']").forEach(el => el.addEventListener("click", () => { this._completionDialog = null; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='confirm-done']").forEach(el => el.addEventListener("click", () => this._confirmDone()));
+    this.shadowRoot.querySelectorAll("[data-action='export-data']").forEach(el => el.addEventListener("click", () => this._exportData()));
+    this.shadowRoot.querySelectorAll("[data-action='import-data']").forEach(el => el.addEventListener("click", () => this._importData()));
+    this.shadowRoot.querySelectorAll("[data-action='save-notification-settings']").forEach(el => el.addEventListener("click", () => this._saveNotificationSettings()));
+    this.shadowRoot.querySelectorAll("[data-action='test-notification']").forEach(el => el.addEventListener("click", () => this._sendNotification(true)));
+    this.shadowRoot.querySelectorAll("[data-action='send-digest']").forEach(el => el.addEventListener("click", () => this._sendNotification(false)));
+    this.shadowRoot.querySelectorAll("[data-action='notify-due']").forEach(el => el.addEventListener("click", () => this._notifyDueTasks()));
+    this.shadowRoot.querySelectorAll("[data-action='select-visible']").forEach(el => el.addEventListener("click", () => { this._filteredTemplates().forEach(t => this._selectedTemplates.add(t.id)); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='clear-template-selection']").forEach(el => el.addEventListener("click", () => { this._selectedTemplates.clear(); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-template-category]").forEach(el => el.addEventListener("click", () => { this._templateCategory = el.dataset.templateCategory; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='add-selected']").forEach(el => el.addEventListener("click", () => this._addSelectedTemplates()));
+    this.shadowRoot.querySelectorAll("[data-action='toggle-completed']").forEach(el => el.addEventListener("click", () => { this._showCompleted = !this._showCompleted; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-reactivate]").forEach(el => el.addEventListener("click", () => this._reactivate(el.dataset.reactivate)));
+    this.shadowRoot.querySelectorAll("[data-add-pack]").forEach(el => el.addEventListener("click", () => this._addStarterPack(el.dataset.addPack)));
+    this.shadowRoot.querySelectorAll("[data-pack-toggle]").forEach(el => el.addEventListener("click", () => { const id = el.dataset.packToggle; this._selectedPacks.has(id) ? this._selectedPacks.delete(id) : this._selectedPacks.add(id); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='apply-onboarding']").forEach(el => el.addEventListener("click", () => this._applyOnboarding()));
+    this.shadowRoot.querySelectorAll("[data-action='open-onboarding']").forEach(el => el.addEventListener("click", () => { this._onboardingDialog = true; this._selectedPacks.clear(); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-action='skip-onboarding']").forEach(el => el.addEventListener("click", () => this._skipOnboarding()));
+    this.shadowRoot.querySelectorAll("[data-action='random-colors']").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); this._randomizeColors("both"); }));
+    this.shadowRoot.querySelectorAll("[data-action='random-icon-color']").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); this._randomizeColors("icon"); }));
+    this.shadowRoot.querySelectorAll("[data-action='random-card-color']").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); this._randomizeColors("card"); }));
+    this.shadowRoot.querySelectorAll("[data-action='clear-colors']").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); this._draft.icon_color = ""; this._draft.card_color = ""; this._render(); }));
+
+    const search = this.shadowRoot.getElementById("search"); if (search) search.addEventListener("input", e => { this._search = e.target.value; this._renderSoon(180); });
+    const sf = this.shadowRoot.getElementById("statusFilter"); if (sf) sf.addEventListener("change", e => { this._statusFilter = e.target.value; this._render(); });
+    const sm = this.shadowRoot.getElementById("sortMode"); if (sm) sm.addEventListener("change", e => { this._sortMode = e.target.value; this._render(); });
+    const season = this.shadowRoot.getElementById("templateSeason"); if (season) season.addEventListener("change", e => { this._templateSeason = e.target.value; this._render(); });
+    const common = this.shadowRoot.getElementById("templateCommon"); if (common) common.addEventListener("change", e => { this._templateOnlyCommon = e.target.checked; this._render(); });
+    const historySearch = this.shadowRoot.getElementById("historySearch"); if (historySearch) historySearch.addEventListener("input", e => { this._historySearch = e.target.value; this._renderSoon(150); });
+    const historyType = this.shadowRoot.getElementById("historyType"); if (historyType) historyType.addEventListener("change", e => { this._historyType = e.target.value; this._render(); });
+    const historyTask = this.shadowRoot.getElementById("historyTask"); if (historyTask) historyTask.addEventListener("change", e => { this._historyTask = e.target.value; this._render(); });
+
+    this.shadowRoot.querySelectorAll("[data-focus-task]").forEach(el => el.addEventListener("click", e => { if (e.target.closest(".next-cycle")) return; this._focusTask(el.dataset.focusTask); }));
+    this.shadowRoot.querySelectorAll("[data-action='prev-next-task']").forEach(el => el.addEventListener("click", e => { e.stopPropagation(); this._cycleNextTask(-1); }));
+    this.shadowRoot.querySelectorAll("[data-action='next-next-task']").forEach(el => el.addEventListener("click", e => { e.stopPropagation(); this._cycleNextTask(1); }));
+    this.shadowRoot.querySelectorAll("[data-edit]").forEach(el => el.addEventListener("click", () => this._openEdit(el.dataset.edit)));
+    this.shadowRoot.querySelectorAll("[data-done]").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); this._openCompletion(el.dataset.done); }));
+    this.shadowRoot.querySelectorAll("[data-snooze-menu]").forEach(el => el.addEventListener("click", () => { this._snoozeMenu = this._snoozeMenu === el.dataset.snoozeMenu ? null : el.dataset.snoozeMenu; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-snooze-days]").forEach(el => el.addEventListener("click", () => { const [id, days] = el.dataset.snoozeDays.split(":"); this._snooze(id, Number(days)); }));
+    this.shadowRoot.querySelectorAll("[data-clear-snooze]").forEach(el => el.addEventListener("click", () => this._clearSnooze(el.dataset.clearSnooze)));
+    this.shadowRoot.querySelectorAll("[data-delete]").forEach(el => el.addEventListener("click", () => this._delete(el.dataset.delete)));
+    this.shadowRoot.querySelectorAll("[data-undo]").forEach(el => el.addEventListener("click", () => this._undo(el.dataset.undo)));
+    this.shadowRoot.querySelectorAll("[data-restore]").forEach(el => el.addEventListener("click", () => this._restoreBackup(el.dataset.restore)));
+    this.shadowRoot.querySelectorAll("[data-copy-diagnostics]").forEach(el => el.addEventListener("click", () => { navigator.clipboard?.writeText(el.dataset.copyDiagnostics || ""); this._showToast(this._t("copyDiagnostics")); }));
+    this.shadowRoot.querySelectorAll("[data-template]").forEach(el => el.addEventListener("click", e => { e.stopPropagation(); this._openCreate(this._template(el.dataset.template)); this._templatePreview = null; }));
+    this.shadowRoot.querySelectorAll("[data-template-preview],[data-template-preview-btn]").forEach(el => el.addEventListener("click", e => { e.stopPropagation(); this._templatePreview = el.dataset.templatePreview || el.dataset.templatePreviewBtn; this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-template-check]").forEach(el => el.addEventListener("change", () => { if (el.checked) this._selectedTemplates.add(el.dataset.templateCheck); else this._selectedTemplates.delete(el.dataset.templateCheck); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-apply-template]").forEach(el => el.addEventListener("click", () => { this._applyTemplate(this._template(el.dataset.applyTemplate)); this._render(); }));
+    this.shadowRoot.querySelectorAll("[data-move]").forEach(el => el.addEventListener("click", () => { const [id, dir] = el.dataset.move.split(":"); this._move(id, dir === "up" ? -1 : 1); }));
+    this.shadowRoot.querySelectorAll("[data-drag]").forEach(el => { el.addEventListener("dragstart", () => this._dragTaskId = el.dataset.drag); el.addEventListener("dragover", e => e.preventDefault()); el.addEventListener("drop", () => this._dropOn(el.dataset.drop)); });
+    this.shadowRoot.querySelectorAll("[data-draft]").forEach(el => el.addEventListener("input", e => this._draftChange(e)));
+    this.shadowRoot.querySelectorAll("select[data-draft]").forEach(el => el.addEventListener("change", e => this._draftChange(e)));
+
+    const picker = this.shadowRoot.getElementById("entityPicker"); if (picker) { picker.hass = this.hass; picker.value = this._draft.entity_id; picker.addEventListener("value-changed", e => { this._draft.entity_id = String(e.detail?.value || ""); }); }
+    const iconHost = this.shadowRoot.getElementById("iconHost"); if (iconHost) this._mountIconPicker(iconHost);
+    const completionBindings = {
+      completionNote: "_completionNote",
+      completionMaterial: "_completionMaterial",
+      completionCost: "_completionCost",
+      completionCurrency: "_completionCurrency",
+      completionPerformedBy: "_completionPerformedBy",
+    };
+    Object.entries(completionBindings).forEach(([id, property]) => { const element = this.shadowRoot.getElementById(id); if (element) element.addEventListener("input", event => this[property] = event.target.value); });
+    const importPayload = this.shadowRoot.getElementById("importPayload"); if (importPayload) importPayload.addEventListener("input", e => this._importPayload = e.target.value);
+    const notifyService = this.shadowRoot.getElementById("notifyService"); if (notifyService) notifyService.addEventListener("input", e => this._notifyService = e.target.value);
+  }
+});
