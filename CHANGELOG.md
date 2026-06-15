@@ -1,0 +1,201 @@
+# Changelog
+
+## v1.5.0
+
+### Added
+
+- Added Notification Rules v2 with global defaults and optional per-task overrides.
+- Added notification preview, test mode, category-grouped digests and persistent notification history with manual clearing.
+- Added configurable repeat intervals, once-per-status delivery and overdue escalation levels.
+- Added actionable Home Assistant Companion notifications for marking tasks done, snoozing tasks and opening the dashboard.
+- Added event-based automation hooks for status changes, warnings, critical tasks, completions and snoozes.
+- Added dynamic per-task entity synchronization without requiring an integration reload when entity modes change.
+- Added optional Home Assistant device grouping for all maintenance entities or per-category devices.
+- Added manual and automatic cleanup of orphaned task entities from the entity registry.
+- Added stable immutable entity keys so task entity unique IDs survive task renames.
+- Added richer global and per-task sensor attributes, including last-notification metadata.
+- Added notification settings, delivery history and deduplication state to full JSON exports and imports.
+- Added Notification Rules v2 and entity-management unit tests plus a structural manager API regression test.
+
+### Changed
+
+- Expanded the notification settings UI with repeat, escalation, quiet-hours, actionable-notification and digest controls.
+- Expanded task editing with advanced per-task notification rules and optional notify-service overrides.
+- Expanded diagnostics with notification history, digest state, entity grouping and cleanup information.
+- Updated the notification automation blueprint to use Maintenance Dashboard task events.
+- Improved daily digest handling by tracking the local delivery date rather than relying only on UTC dates.
+- Improved generated entity lifecycle handling across mode and device-grouping changes.
+
+### Fixed
+
+- Restored automation-ready task summaries used by sensors, events and notification payloads.
+- Prevented malformed per-task numeric notification settings from breaking task normalization.
+- Included unavailable tasks in automatic notification evaluation while still respecting the configured unavailable-task rule.
+- Reduced duplicate notification risk through status-, escalation- and repeat-aware delivery records.
+
+## v1.4.0
+
+### Added
+
+- Added a dedicated scheduling engine for interval, one-time, monthly, yearly and seasonal tasks.
+- Added one-time task archiving and reactivation.
+- Added monthly and yearly fixed-calendar schedules with safe date clamping for short months and leap years.
+- Added seasonal scheduling for spring, summer, autumn and winter.
+- Added completion metadata for notes, materials, cost, currency and performed-by information.
+- Added history filters by text, action and task.
+- Added expandable before/after field changes to history entries.
+- Expanded the template library to 80 brand-neutral maintenance templates.
+- Added template tags, popular/common filters and richer schedule previews.
+- Added ten selectable starter packs for home, safety, heating, garden, solar, IT, household, water, building and garage maintenance.
+- Added a first-run onboarding flow for selecting starter packs without bulk-adding the complete library.
+- Added scheduling and template-library unit test suites.
+- Added an optional Home Assistant notification automation blueprint.
+
+### Changed
+
+- Improved the task editor with schedule-specific controls and validation.
+- Improved completed-task handling by hiding archived one-time tasks by default while keeping them accessible.
+- Improved task cards with schedule labels, completed states and reactivation actions.
+- Improved template browsing with category groups, season filtering, common-task filtering and starter-pack sections.
+- Improved template previews with tags and schedule metadata.
+- Improved global summaries so completed one-time tasks no longer count as open maintenance work.
+- Improved English and German frontend text coverage for the new scheduling and onboarding interfaces.
+- Kept storage changes additive and backward-compatible with existing v1.3.x task data.
+
+### Fixed
+
+- Prevented meter-based tasks from retaining unsupported calendar schedule modes.
+- Added safe calendar handling for day 29, 30 and 31 across shorter months.
+- Preserved full task state for completion undo operations.
+
+## v1.3.1
+
+### Fixed
+- reworked the task editor layout so appearance controls are aligned more cleanly
+- moved priority into the main form and switched it to a clearer long-slider style control
+- preserved dialog scroll position when using random color actions and color reset actions
+- prevented random-color actions from jumping the dialog back to the top
+
+### Improved
+- grouped template library entries by category for better scanning
+- upgraded dashboard toolbar layout so create, search and filter controls feel less empty and more structured
+- kept template selection workflow and search/filter controls intact while improving overall layout
+
+## v1.3.0
+
+### Added
+
+- Added dedicated settings, notification and task-entity helper modules.
+- Added a cleaner backend separation for notification payloads, settings normalization and generated task-entity metadata.
+
+- Added optional per-task Home Assistant entities with configurable entity generation modes: off, due-only, basic, and full.
+- Added richer global sensor attributes for next task, warning tasks, critical tasks, unavailable tasks, and health score metadata.
+- Added notification settings for warning, critical, due and digest notifications.
+- Added notification services for test notifications, task notifications, due-task notifications and maintenance digests.
+- Added notification state tracking to reduce duplicate notification spam.
+- Added daily digest scheduling based on the configured digest time.
+- Added a Home Assistant automation blueprint for maintenance notifications.
+- Added dashboard URL metadata to sensors and notification payloads.
+
+### Changed
+
+- Improved settings storage with dedicated notification and task-entity settings.
+- Improved diagnostics with notification and task-entity information.
+- Improved automation support through richer entity attributes and explicit notification services.
+
+### Fixed
+
+- Reduced the risk of duplicate digest notifications after Home Assistant restarts.
+- Improved handling of deleted, disabled and snoozed tasks in entity and notification logic.
+
+## v1.2.0
+
+### Added
+
+- Added categorized template library with quick category tabs and compact template cards.
+- Added template preview dialog before adding templates.
+- Added seasonal template metadata and several seasonal maintenance templates.
+- Added backup, restore, import, and export UI under Settings → Data safety.
+- Added extended diagnostics dialog with frontend version, store version, task count, history count, backup count, language, summary, and copy-to-clipboard support.
+- Added basic notification support with test notification and maintenance digest actions.
+- Added completion notes when marking tasks as done.
+- Added initial support for one-time, fixed-date, and seasonal schedule modes.
+- Added improved Home Assistant sensor attributes for next task, critical tasks, warning tasks, and unavailable tasks.
+- Added mobile-first responsive layout for header, KPI cards, task cards, template library, dialogs, and action buttons.
+
+### Changed
+
+- Split the frontend source into real runtime modules instead of placeholder files.
+
+- Split the frontend source into a modular development structure while still producing a single bundled panel file for HACS/Home Assistant.
+- Improved mobile task card actions and dialog behavior.
+- Improved settings layout by grouping diagnostics, notifications, and data safety actions.
+- Improved release build flow to concatenate frontend source modules into the final Home Assistant panel asset.
+
+### Fixed
+
+- Hardened the Done action by routing completion through a dedicated confirmation dialog and preserving optional completion notes in history.
+- Improved backup safety by creating a backup before full JSON imports.
+
+## v1.1.0
+
+### Added
+
+- Added the project logo to the dashboard header.
+- Added dashboard history access as a modal dialog.
+- Added click-to-focus behavior for the next task summary card.
+- Added a short highlight animation when jumping to a maintenance task.
+
+### Changed
+
+- Simplified the header navigation by moving settings behind the cog icon.
+- Improved the next task summary card with shorter text handling.
+- Hidden warning, critical, and unavailable summary cards when their value is zero.
+- Kept the dashboard focused by removing history as a dedicated tab.
+
+### Fixed
+
+- Added panel cache busting via the registered module URL to ensure Home Assistant loads updated frontend assets after upgrades.
+
+## v1.0.3
+
+### Fixed
+
+- Added frontend panel cache busting to ensure Home Assistant loads the updated panel JavaScript after integration updates.
+- Updated internal integration version constant to match the released package version.
+
+## v1.0.2
+
+### Added
+
+- Added project logo and banner assets.
+- Added README preview images for dashboard overview, template library, task editor, and task cards.
+- Added branding assets for repository presentation and future Home Assistant / HACS brand usage.
+
+### Changed
+
+- Improved README presentation with logo, banner, and preview screenshots.
+- Improved GitHub release notes handling by extracting release notes from `CHANGELOG.md`.
+- Cleaned up public repository presentation for HACS distribution.
+
+## v1.0.1
+
+### Changed
+
+- Improved project README with a clearer product description, installation notes, safety goals, and development workflow.
+- Added stronger wording around backend-managed storage, task history, backups, and safe update behavior.
+- Improved repository presentation for HACS and GitHub mirrors.
+- Added initial branding guidance and recommended repository description.
+- Clarified that the compiled frontend panel must be committed because HACS does not build frontend assets during installation.
+
+### Fixed
+
+- Cleaned up HACS-related metadata expectations.
+- Clarified the Forgejo-to-GitHub mirror workflow for HACS distribution.
+- Documented the recommended release process for mirrored GitHub releases.
+
+---
+
+## 1.0.0
+
+Initial release.

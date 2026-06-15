@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wartungsdashboard",
+        "description": "Erstellt ein eigenes Sidebar-Panel für Wartungsaufgaben rund ums Haus.",
+        "data": {
+          "title": "Titel"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Das Wartungsdashboard ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen für Wartungsdashboard",
+        "data": {
+          "history_retention": "Maximale Historien-Einträge",
+          "show_in_sidebar": "In Seitenleiste anzeigen"
+        }
+      }
+    }
+  }
+}
