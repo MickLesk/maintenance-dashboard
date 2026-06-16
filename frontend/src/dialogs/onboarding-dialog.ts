@@ -1,0 +1,8 @@
+// First-run onboarding and starter pack selection.
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _onboardingDialogHtml() {
+    if (!this._onboardingDialog) return "";
+    const packs = this._state?.template_packs || [];
+    return `<div class="dialog-backdrop"><section class="dialog onboarding-dialog"><header><div><p class="eyebrow">${this._t("brandName")}</p><h2>${this._t("onboarding")}</h2></div><button class="icon" data-action="skip-onboarding" title="${this._t("skip")}"><ha-icon icon="mdi:close"></ha-icon></button></header><div class="dialog-body"><section class="onboarding-hero"><div class="empty-orb"><ha-icon icon="mdi:home-wrench-outline"></ha-icon></div><div><h3>${this._t("onboardingTitle")}</h3><p>${this._t("onboardingHint")}</p></div></section><section class="pack-grid">${packs.map(pack => { const checked = this._selectedPacks.has(pack.id); return `<button type="button" class="pack-card ${checked ? "selected" : ""}" data-pack-toggle="${this._html(pack.id)}"><ha-icon icon="${this._html(pack.icon || "mdi:package-variant")}"></ha-icon><div><strong>${this._html(pack.name)}</strong><p>${this._html(pack.description || "")}</p><small>${(pack.template_ids || []).length} ${this._t("templates")}</small></div><span class="pack-check"><ha-icon icon="${checked ? "mdi:check-circle" : "mdi:circle-outline"}"></ha-icon></span></button>`; }).join("")}</section></div><footer><button class="ghost" data-action="skip-onboarding">${this._t("skip")}</button><button class="primary big" data-action="apply-onboarding" ${this._selectedPacks.size ? "" : "disabled"}><ha-icon icon="mdi:rocket-launch-outline"></ha-icon>${this._t("startSetup")} · ${this._selectedPacks.size}</button></footer></section></div>`;
+  }
+});
