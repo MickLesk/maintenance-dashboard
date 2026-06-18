@@ -1,8 +1,0 @@
-// YAML/JSON custom template import dialog.
-Object.assign(MaintenanceDashboardPanel.prototype, {
-  _templateImportDialogHtml() {
-    if (!this._templateImportOpen) return "";
-    const preview = this._templateImportPreview;
-    return `<div class="dialog-backdrop"><section class="dialog small"><header><div class="dialog-title-block"><h2>${this._t("importTemplates")}</h2><p class="section-hint">${this._t("importTemplatesYamlHint")}</p></div><button class="icon" data-action="close-template-import"><ha-icon icon="mdi:close"></ha-icon></button></header><div class="dialog-body"><label class="description-field"><span>${this._t("importTemplatesHint")}</span><textarea id="templateImportPayload" placeholder="${this._t("importTemplatesPlaceholder")}">${this._html(this._templateImportPayload || "")}</textarea></label><div class="button-row"><button class="ghost" data-action="preview-template-import"><ha-icon icon="mdi:eye-outline"></ha-icon>${this._t("importTemplatePreview")}</button></div>${preview ? `<div class="import-preview ${preview.valid === false ? "error" : ""}"><strong>${preview.valid ?? preview.count ?? 0} ${this._t("templates")}</strong>${preview.duplicates?.length ? `<p>${this._t("duplicateTaskWarning")}: ${preview.duplicates.slice(0, 5).map(name => this._html(name)).join(", ")}</p>` : ""}</div>` : ""}</div><footer><button class="ghost" data-action="close-template-import">${this._t("cancel")}</button><button class="primary" data-action="import-user-templates" ${preview ? "" : "disabled"}><ha-icon icon="mdi:upload"></ha-icon>${this._t("importTemplatesAction")}</button></footer></section></div>`;
-  },
-});
