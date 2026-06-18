@@ -1,0 +1,15 @@
+{
+  "domain": "maintenance_dashboard",
+  "name": "Maintenance Dashboard",
+  "codeowners": [
+    "@MickLesk"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend"
+  ],
+  "documentation": "https://github.com/MickLesk/maintenance-dashboard",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/MickLesk/maintenance-dashboard/issues",
+  "version": "2.3.2"
+}
