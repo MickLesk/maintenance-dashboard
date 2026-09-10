@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Maintenance Dashboard",
+        "description": "Create a dedicated sidebar panel for home maintenance tasks.",
+        "data": {
+          "title": "Title"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Maintenance Dashboard is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Maintenance Dashboard options",
+        "data": {
+          "history_retention": "Maximum history entries",
+          "show_in_sidebar": "Show in sidebar"
+        }
+      }
+    }
+  },
+  "issues": {
+    "data_integrity": {
+      "title": "Maintenance Dashboard data integrity problems",
+      "description": "Maintenance Dashboard detected {errors} error(s) and {warnings} warning(s). Open the repair flow to create a safety backup and repair non-destructive issues."
+    },
+    "migration_failed": {
+      "title": "Maintenance Dashboard storage migration failed",
+      "description": "The storage migration could not be completed: {error}. Existing storage was left untouched."
+    },
+    "notify_service_invalid": {
+      "title": "Maintenance Dashboard notify service is invalid",
+      "description": "The configured notify service `{service}` is not a valid `domain.service` target."
+    },
+    "backup_storage_invalid": {
+      "title": "Maintenance Dashboard backups are invalid",
+      "description": "{count} backup snapshot(s) contain invalid task or history data."
+    }
+  },
+  "repairs": {
+    "data_integrity": {
+      "step": {
+        "confirm": {
+          "title": "Repair Maintenance Dashboard data",
+          "description": "A pinned safety backup is created first. Missing or duplicate record IDs are repaired, invalid values are normalized and records that cannot be repaired are moved to quarantine. No data is silently deleted."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "task_status_changed": "A maintenance task changes status",
+      "task_warning": "A maintenance task enters warning state",
+      "task_critical": "A maintenance task becomes critical",
+      "task_overdue": "A maintenance task becomes overdue",
+      "task_completed": "A maintenance task is completed"
+    },
+    "condition_type": {
+      "any_critical": "At least one maintenance task is critical or overdue",
+      "category_has_due": "A category has due maintenance tasks",
+      "task_is_overdue": "A specific maintenance task is overdue"
+    }
+  }
+}
