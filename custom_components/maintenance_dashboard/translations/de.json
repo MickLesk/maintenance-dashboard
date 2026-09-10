@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wartungsdashboard",
+        "description": "Erstellt ein eigenes Sidebar-Panel für Wartungsaufgaben rund ums Haus.",
+        "data": {
+          "title": "Titel"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Das Wartungsdashboard ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen für Wartungsdashboard",
+        "data": {
+          "history_retention": "Maximale Historien-Einträge",
+          "show_in_sidebar": "In Seitenleiste anzeigen"
+        }
+      }
+    }
+  },
+  "issues": {
+    "data_integrity": {
+      "title": "Datenintegritätsprobleme im Wartungsdashboard",
+      "description": "Das Wartungsdashboard hat {errors} Fehler und {warnings} Warnungen erkannt. Über den Reparaturdialog wird zuerst ein Sicherheitsbackup erstellt und anschließend werden nicht-destruktiv reparierbare Probleme behoben."
+    },
+    "migration_failed": {
+      "title": "Speichermigration des Wartungsdashboards fehlgeschlagen",
+      "description": "Die Speichermigration konnte nicht abgeschlossen werden: {error}. Der bisherige Speicher wurde unverändert belassen."
+    },
+    "notify_service_invalid": {
+      "title": "Ungültiger Notify-Service im Wartungsdashboard",
+      "description": "Der konfigurierte Notify-Service `{service}` ist kein gültiges Ziel im Format `domain.service`."
+    },
+    "backup_storage_invalid": {
+      "title": "Ungültige Backups im Wartungsdashboard",
+      "description": "{count} Backup-Snapshots enthalten ungültige Aufgaben- oder Historiendaten."
+    }
+  },
+  "repairs": {
+    "data_integrity": {
+      "step": {
+        "confirm": {
+          "title": "Daten des Wartungsdashboards reparieren",
+          "description": "Zuerst wird ein geschütztes Sicherheitsbackup erstellt. Fehlende oder doppelte Datensatz-IDs werden repariert, ungültige Werte normalisiert und nicht reparierbare Datensätze in die Quarantäne verschoben. Es werden keine Daten stillschweigend gelöscht."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "task_status_changed": "Ein Wartungseintrag ändert seinen Status",
+      "task_warning": "Ein Wartungseintrag wechselt in den Warnstatus",
+      "task_critical": "Ein Wartungseintrag wird kritisch",
+      "task_overdue": "Ein Wartungseintrag wird überfällig",
+      "task_completed": "Ein Wartungseintrag wird erledigt"
+    },
+    "condition_type": {
+      "any_critical": "Mindestens ein Wartungseintrag ist kritisch oder überfällig",
+      "category_has_due": "Eine Kategorie enthält fällige Wartungseinträge",
+      "task_is_overdue": "Ein bestimmter Wartungseintrag ist überfällig"
+    }
+  }
+}
