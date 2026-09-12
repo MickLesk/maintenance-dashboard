@@ -326,6 +326,40 @@ def build_activity(history: list[dict[str, Any]], year: int) -> dict[str, Any]:
     }
 
 
+def build_backlog(
+    tasks: list[dict[str, Any]],
+    due_by_task: dict[str, str | None],
+    *,
+    now: datetime,
+) -> dict[str, Any]:
+    """Overdue days added up across open tasks.
+
+    A count of overdue tasks says how many; this says how far behind, which is
+    the number that moves when the backlog is worked off rather than grown.
+    """
+    entries = []
+    for task in tasks:
+        if task.get("deleted") or not task.get("enabled", True):
+            continue
+        due = _parse(due_by_task.get(str(task.get("id"))))
+        if due is None or due >= now:
+            continue
+        days = (now - due).total_seconds() / 86400
+        entries.append({
+            "task_id": str(task.get("id")),
+            "name": task.get("name") or task.get("id"),
+            "days": round(days, 1),
+            "priority": int(task.get("priority") or 3),
+        })
+    entries.sort(key=lambda item: item["days"], reverse=True)
+    return {
+        "total_days": round(sum(entry["days"] for entry in entries), 1),
+        "weighted_days": round(sum(entry["days"] * entry["priority"] for entry in entries), 1),
+        "tasks": len(entries),
+        "worst": entries[:5],
+    }
+
+
 def build_statistics(
     history: list[dict[str, Any]],
     tasks: list[dict[str, Any]],
@@ -351,6 +385,7 @@ def build_statistics(
         "top_cost_tasks": costs["top_cost_tasks"] if cost_tracking else [],
         "is_current_year": target_year == moment.year,
         "activity": build_activity(history, target_year),
+        "backlog": build_backlog(tasks, due_by_task or {}, now=moment),
         "reliability": build_reliability(history, task_names, target_year),
         "runs": build_runs(history, tasks, target_year),
         "effort": build_effort(history, tasks, target_year),

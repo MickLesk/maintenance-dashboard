@@ -21,6 +21,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       ${this._budgetHtml()}
       ${empty ? this._emptyMessage("mdi:chart-box-outline", this._t("statisticsNeedsHistory")) : `
       ${this._statsActivityHtml(stats)}
+      ${this._statsBacklogHtml(stats)}
       ${this._statsReliabilityHtml(stats)}
       ${this._statsRunsHtml(stats)}
       ${this._statsEffortHtml(stats)}
@@ -105,6 +106,34 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       `<div class="stat-card-grid">${cards}</div>
        <div class="activity-heatmap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${this._t("statisticsActivity")}: ${summary}">${months.join("")}${weekdays.join("")}${cells.join("")}</svg></div>
        ${legend}`);
+  },
+
+  _statsBacklogHtml(stats) {
+    const backlog = stats.backlog || {};
+    if (!backlog.tasks) {
+      return this._statSection("mdi:progress-check", this._t("statisticsBacklog"), this._t("backlogHint"),
+        `<p class="section-hint">${this._t("backlogNone")}</p>`);
+    }
+    const trend = stats.health_trend || [];
+    const past = trend.length > 30 ? trend[trend.length - 31] : trend[0];
+    const previous = past && past.overdue != null ? Number(past.overdue) : null;
+    const delta = previous == null ? null : backlog.tasks - previous;
+    const hint = delta == null ? ""
+      : delta === 0 ? this._t("backlogTrendFlat")
+        : `${delta > 0 ? "▲" : "▼"} ${Math.abs(delta)} ${this._t(delta > 0 ? "backlogTrendUp" : "backlogTrendDown")}`;
+    const worst = (backlog.worst || [])[0];
+    const cards = [
+      this._statCard(this._t("backlogTotalDays"), `${this._num(backlog.total_days)} ${this._t("days")}`, hint),
+      this._statCard(this._t("backlogTasks"), backlog.tasks),
+      worst ? this._statCard(this._t("backlogWorst"), `${this._num(worst.days)} ${this._t("days")}`, this._html(worst.name)) : "",
+    ].filter(Boolean).join("");
+    const rows = (backlog.worst || []).map(item => ({
+      label: this._html(item.name),
+      hint: `${this._t("priority")} ${item.priority}/5`,
+      value: item.days,
+    }));
+    return this._statSection("mdi:progress-alert", this._t("statisticsBacklog"), this._t("backlogHint"),
+      `<div class="stat-card-grid">${cards}</div>${this._statBars(rows, { format: value => `${this._num(value)} ${this._t("days")}` })}`);
   },
 
   _statsReliabilityHtml(stats) {

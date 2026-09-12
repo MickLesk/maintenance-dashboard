@@ -900,7 +900,7 @@ class MaintenanceManager:
         notifications_block = self._settings.get("notifications", {})
         if notif_service and not notifications_block.get("enabled", False):
             issues.append({"severity": "warning", "task_id": None, "message": "notifications_disabled"})
-        if self._settings.get("modules", {}).get("assets"):
+        if self._settings.get("modules", {}).get("documents"):
             for entry in expiry_status(self._assets):
                 issues.append({
                     "severity": "warning",

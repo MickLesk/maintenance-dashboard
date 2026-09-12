@@ -167,6 +167,14 @@ const I18N = Object.freeze({
     "autumn": "Herbst",
     "availableRestoreTasks": "geänderte oder hinzugefügte Aufgaben verfügbar",
     "averageDaysLate": "Ø Verzug",
+    "backlogHint": "Aufsummierte Überfälligkeitstage aller offenen Aufgaben, Stand heute.",
+    "backlogNone": "Nichts ist überfällig.",
+    "backlogTasks": "Überfällige Aufgaben",
+    "backlogTotalDays": "Überfälligkeitstage",
+    "backlogTrendDown": "weniger als vor 30 Tagen",
+    "backlogTrendFlat": "unverändert gegenüber vor 30 Tagen",
+    "backlogTrendUp": "mehr als vor 30 Tagen",
+    "backlogWorst": "Am längsten überfällig",
     "backupActivities": "Backup-Ereignisse",
     "backupBeforeBulk": "Backup vor Mehrfachaktionen",
     "backupBeforeImport": "Backup vor Import",
@@ -822,6 +830,7 @@ const I18N = Object.freeze({
     "startSetup": "Auswahl hinzufügen",
     "statistics": "Statistik",
     "statisticsActivity": "Erledigungs-Kalender",
+    "statisticsBacklog": "Wartungsrückstand",
     "statisticsCosts": "Kosten",
     "statisticsEffort": "Aufwand",
     "statisticsForecast": "Prognose",
@@ -1062,6 +1071,14 @@ const I18N = Object.freeze({
     "autumn": "Autumn",
     "availableRestoreTasks": "changed or added tasks available",
     "averageDaysLate": "Average delay",
+    "backlogHint": "Overdue days added up across all open tasks, as of today.",
+    "backlogNone": "Nothing is overdue.",
+    "backlogTasks": "Overdue tasks",
+    "backlogTotalDays": "Overdue days",
+    "backlogTrendDown": "fewer than 30 days ago",
+    "backlogTrendFlat": "unchanged against 30 days ago",
+    "backlogTrendUp": "more than 30 days ago",
+    "backlogWorst": "Longest overdue",
     "backupActivities": "Backup events",
     "backupBeforeBulk": "Backup before bulk actions",
     "backupBeforeImport": "Backup before import",
@@ -1717,6 +1734,7 @@ const I18N = Object.freeze({
     "startSetup": "Add selection",
     "statistics": "Statistics",
     "statisticsActivity": "Completion calendar",
+    "statisticsBacklog": "Maintenance backlog",
     "statisticsCosts": "Costs",
     "statisticsEffort": "Effort",
     "statisticsForecast": "Forecast",
@@ -3023,6 +3041,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       ${this._budgetHtml()}
       ${empty ? this._emptyMessage("mdi:chart-box-outline", this._t("statisticsNeedsHistory")) : `
       ${this._statsActivityHtml(stats)}
+      ${this._statsBacklogHtml(stats)}
       ${this._statsReliabilityHtml(stats)}
       ${this._statsRunsHtml(stats)}
       ${this._statsEffortHtml(stats)}
@@ -3107,6 +3126,34 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       `<div class="stat-card-grid">${cards}</div>
        <div class="activity-heatmap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${this._t("statisticsActivity")}: ${summary}">${months.join("")}${weekdays.join("")}${cells.join("")}</svg></div>
        ${legend}`);
+  },
+
+  _statsBacklogHtml(stats) {
+    const backlog = stats.backlog || {};
+    if (!backlog.tasks) {
+      return this._statSection("mdi:progress-check", this._t("statisticsBacklog"), this._t("backlogHint"),
+        `<p class="section-hint">${this._t("backlogNone")}</p>`);
+    }
+    const trend = stats.health_trend || [];
+    const past = trend.length > 30 ? trend[trend.length - 31] : trend[0];
+    const previous = past && past.overdue != null ? Number(past.overdue) : null;
+    const delta = previous == null ? null : backlog.tasks - previous;
+    const hint = delta == null ? ""
+      : delta === 0 ? this._t("backlogTrendFlat")
+        : `${delta > 0 ? "▲" : "▼"} ${Math.abs(delta)} ${this._t(delta > 0 ? "backlogTrendUp" : "backlogTrendDown")}`;
+    const worst = (backlog.worst || [])[0];
+    const cards = [
+      this._statCard(this._t("backlogTotalDays"), `${this._num(backlog.total_days)} ${this._t("days")}`, hint),
+      this._statCard(this._t("backlogTasks"), backlog.tasks),
+      worst ? this._statCard(this._t("backlogWorst"), `${this._num(worst.days)} ${this._t("days")}`, this._html(worst.name)) : "",
+    ].filter(Boolean).join("");
+    const rows = (backlog.worst || []).map(item => ({
+      label: this._html(item.name),
+      hint: `${this._t("priority")} ${item.priority}/5`,
+      value: item.days,
+    }));
+    return this._statSection("mdi:progress-alert", this._t("statisticsBacklog"), this._t("backlogHint"),
+      `<div class="stat-card-grid">${cards}</div>${this._statBars(rows, { format: value => `${this._num(value)} ${this._t("days")}` })}`);
   },
 
   _statsReliabilityHtml(stats) {
