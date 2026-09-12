@@ -2205,6 +2205,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
     const content = this._state ? this._viewHtml() : `<div class="loading">${this._t("loading")}</div>`;
     this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
     this._bind();
+    this._applyAccessibility();
     this._persistUiState();
     this._restoreFocus(focusState);
   }
@@ -2302,12 +2303,15 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   },
 
   _handleKeyboard(event) {
-    const target = event.target;
+    // The listener sits on window, so event.target is retargeted to the host
+    // element and the real focus has to come from the composed path.
+    const target = event.composedPath?.()[0] || event.target;
     const tag = String(target?.tagName || "").toLowerCase();
     const editable = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
     if (event.key === "Escape") {
       if (this._closeTopOverlay()) { event.preventDefault(); return; }
     }
+    if (this._handleOverlayKeys(event)) return;
     if (editable && event.key !== "Escape") return;
     if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const search = this.shadowRoot?.querySelector("#search");
@@ -2322,6 +2326,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   },
 
   _closeTopOverlay() {
+    if (this._snoozeMenu || this._workflowMenu) { this._snoozeMenu = null; this._workflowMenu = null; this._render(); return true; }
     if (this._shortcutsDialogOpen) { this._shortcutsDialogOpen = false; this._render(); return true; }
     if (this._dialog) { this._closeDialog(); return true; }
     if (this._taskDetailId) { this._taskDetailId = ""; this._taskNoteDraft = ""; this._taskDetailTab = "overview"; this._render(); return true; }
@@ -2332,6 +2337,133 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     if (this._completionDialog) { this._completionDialog = null; this._render(); return true; }
     if (this._quickCreateOpen) { this._quickCreateOpen = false; this._render(); return true; }
     return false;
+  },
+});
+
+
+// ---- frontend/src/core/a11y.ts ----
+// @ts-nocheck
+// Status must not be carried by colour alone, and the panel rebuilds its whole
+// shadow tree on every render, so dialogs and menus are re-labelled each time.
+const STATUS_ICONS = {
+  overdue: "mdi:calendar-alert",
+  critical: "mdi:alert-octagon",
+  warning: "mdi:alert-outline",
+  unavailable: "mdi:cloud-question-outline",
+  snoozed: "mdi:pause-circle-outline",
+  ok: "mdi:check-circle-outline",
+  completed: "mdi:archive-check-outline",
+  disabled: "mdi:cancel",
+  deleted: "mdi:delete-outline",
+};
+
+const FOCUSABLE = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _statusIcon(status) {
+    return STATUS_ICONS[status] || STATUS_ICONS.unavailable;
+  },
+
+  _statusChip(status, label) {
+    return `<span class="status ${this._html(status)}"><ha-icon icon="${this._statusIcon(status)}"></ha-icon>${label}</span>`;
+  },
+
+  _topDialog() {
+    const backdrops = this.shadowRoot?.querySelectorAll(".dialog-backdrop");
+    return backdrops?.length ? backdrops[backdrops.length - 1] : null;
+  },
+
+  _openMenu() {
+    return this.shadowRoot?.querySelector(".snooze-menu,.workflow-menu") || null;
+  },
+
+  _focusableIn(root) {
+    return Array.from(root?.querySelectorAll(FOCUSABLE) || []).filter(el => el.getClientRects().length);
+  },
+
+  _applyAccessibility() {
+    const root = this.shadowRoot;
+    if (!root) return;
+
+    root.querySelectorAll(".dialog-backdrop").forEach((backdrop, index) => {
+      const dialog = backdrop.querySelector(".dialog");
+      if (!dialog) return;
+      dialog.setAttribute("role", "dialog");
+      dialog.setAttribute("aria-modal", "true");
+      dialog.setAttribute("tabindex", "-1");
+      const heading = dialog.querySelector("h2");
+      if (!heading) return;
+      if (!heading.id) heading.id = `maintenance-dialog-title-${index}`;
+      dialog.setAttribute("aria-labelledby", heading.id);
+    });
+
+    const toast = root.querySelector(".toast");
+    if (toast) {
+      toast.setAttribute("role", "status");
+      toast.setAttribute("aria-live", "polite");
+    }
+
+    root.querySelectorAll(".snooze-menu,.workflow-menu").forEach(menu => {
+      menu.setAttribute("role", "menu");
+      menu.querySelectorAll("button").forEach(button => button.setAttribute("role", "menuitem"));
+    });
+    root.querySelectorAll("[data-snooze-menu],[data-workflow-menu]").forEach(button => {
+      const id = button.dataset.snoozeMenu || button.dataset.workflowMenu;
+      button.setAttribute("aria-haspopup", "menu");
+      button.setAttribute("aria-expanded", String(this._snoozeMenu === id || this._workflowMenu === id));
+    });
+
+    this._syncOverlayFocus();
+  },
+
+  // Only move focus when a different overlay appears, so typing is never interrupted.
+  _syncOverlayFocus() {
+    const dialog = this._topDialog()?.querySelector(".dialog") || null;
+    const menu = this._openMenu();
+    const signature = dialog
+      ? `dialog:${dialog.className}:${dialog.querySelector("h2")?.textContent || ""}`
+      : menu ? `menu:${this._snoozeMenu || this._workflowMenu}` : "";
+    if (signature === this._overlaySignature) return;
+    this._overlaySignature = signature;
+    const container = dialog || menu;
+    if (!container) return;
+    requestAnimationFrame(() => {
+      if (!container.isConnected) return;
+      (this._focusableIn(container)[0] || container).focus?.();
+    });
+  },
+
+  _handleOverlayKeys(event) {
+    const menu = this._openMenu();
+    if (menu && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+      const items = this._focusableIn(menu);
+      if (!items.length) return false;
+      const current = items.indexOf(this.shadowRoot.activeElement);
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      const next = items[(current + step + items.length) % items.length] || items[0];
+      event.preventDefault();
+      next.focus();
+      return true;
+    }
+
+    if (event.key !== "Tab") return false;
+    const container = this._topDialog()?.querySelector(".dialog") || menu;
+    if (!container) return false;
+    const items = this._focusableIn(container);
+    if (!items.length) return false;
+    const current = items.indexOf(this.shadowRoot.activeElement);
+    const step = event.shiftKey ? -1 : 1;
+    const next = current === -1 ? items[event.shiftKey ? items.length - 1 : 0] : items[(current + step + items.length) % items.length];
+    event.preventDefault();
+    next.focus();
+    return true;
   },
 });
 
@@ -2584,7 +2716,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <label class="task-select"><input type="checkbox" data-select-task="${task.id}" ${this._selectedTasks.has(task.id) ? "checked" : ""}><span></span></label>
       <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
       <div class="grow"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
-      <span>${this._date(runtime.due_at)}</span><span class="status ${runtime.status || "unavailable"}">${this._t(runtime.status || "unavailable")}</span>
+      <span>${this._date(runtime.due_at)}</span>${this._statusChip(runtime.status || "unavailable", this._t(runtime.status || "unavailable"))}
       ${actions}
     </article>`;
   },
@@ -2605,7 +2737,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
         <div class="timeline-main"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
         <div class="timeline-date"><span>${status === "completed" ? this._t("lastDone") : this._t("due")}</span><strong>${this._date(status === "completed" ? runtime.last_done : runtime.due_at)}</strong></div>
-        <span class="status ${status}">${this._t(status)}</span>
+        ${this._statusChip(status, this._t(status))}
         <div class="timeline-progress"><strong>${Math.round(progress)}%</strong><div class="progress"><div style="width:${progress}%"></div></div></div>
         <div class="timeline-actions">${actions}</div>
       </div>
@@ -2811,7 +2943,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <header>
         <label class="task-select" title="${this._t("selectedTasksCount")}"><input type="checkbox" data-select-task="${task.id}" ${this._selectedTasks.has(task.id) ? "checked" : ""}><span></span></label>
         <div class="title-row"><span class="icon-chip" style="${task.icon_color ? `color:${this._html(task.icon_color)}` : ""}"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span><div><h3>${this._html(task.name)}</h3><p>${this._categoryLabel(task)} · ${this._scheduleSummary(task)}${task.area_name ? ` · ${this._html(task.area_name)}` : ""}</p></div></div>
-        <span class="status ${status}">${completed ? this._t("archived") : this._t(status)}</span>
+        ${this._statusChip(status, completed ? this._t("archived") : this._t(status))}
       </header>
       <div class="workflow-strip"><span class="workflow-state state-${this._html(workflowState)}">${this._workflowStateLabel(workflowState)}</span>${task.blocked_by ? `<span class="workflow-metric blocked-by">${this._t("dependencyBlocked").replace("{name}", this._html(task.blocked_by.name || ""))}</span>` : ""}${execution.sequence ? `<span class="workflow-metric">${this._t("runLabel")} ${execution.sequence}</span>` : ""}${showChecklist ? `<span class="workflow-metric">${this._t("checklist")}: ${checklistProgress.done}/${checklistProgress.total}</span>` : ""}${showChecklist && this._procedureMinutes(checklist) ? `<span class="workflow-metric">${this._t("procedureDuration").replace("{minutes}", String(this._procedureMinutes(checklist)))}</span>` : ""}</div>
       ${task.description ? `<p class="description">${this._html(task.description)}</p>` : ""}
@@ -6574,7 +6706,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .title-row p,.description{color:var(--md-sys-color-on-surface-variant);}
     .icon-chip{width:74px;height:74px;border-radius:20px;background:color-mix(in srgb,var(--task-accent,var(--md-sys-color-primary)) 22%,var(--md-sys-color-surface-container-high));color:var(--md-sys-color-on-surface);}
     .icon-chip ha-icon{--mdc-icon-size:38px;}
-    .status{min-height:34px;padding:0 16px;display:inline-flex;align-items:center;background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-success);}
+    .status{min-height:34px;padding:0 16px;display:inline-flex;align-items:center;background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-success);}.status ha-icon{--mdc-icon-size:15px;width:15px;height:15px;flex:0 0 auto;margin-inline-end:5px}
     .status.warning{background:color-mix(in srgb,var(--md-sys-color-warning) 14%,var(--md-sys-color-surface-container));color:var(--md-sys-color-warning);}
     .status.critical,.status.overdue{background:color-mix(in srgb,var(--md-sys-color-error) 15%,var(--md-sys-color-surface-container));color:var(--md-sys-color-error);}
     .status.snoozed{background:color-mix(in srgb,var(--md-sys-color-primary) 15%,var(--md-sys-color-surface-container));color:var(--md-sys-color-primary);}

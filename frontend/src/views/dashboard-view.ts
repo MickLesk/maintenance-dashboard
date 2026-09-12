@@ -225,7 +225,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <label class="task-select"><input type="checkbox" data-select-task="${task.id}" ${this._selectedTasks.has(task.id) ? "checked" : ""}><span></span></label>
       <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
       <div class="grow"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
-      <span>${this._date(runtime.due_at)}</span><span class="status ${runtime.status || "unavailable"}">${this._t(runtime.status || "unavailable")}</span>
+      <span>${this._date(runtime.due_at)}</span>${this._statusChip(runtime.status || "unavailable", this._t(runtime.status || "unavailable"))}
       ${actions}
     </article>`;
   },
@@ -246,7 +246,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
         <div class="timeline-main"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
         <div class="timeline-date"><span>${status === "completed" ? this._t("lastDone") : this._t("due")}</span><strong>${this._date(status === "completed" ? runtime.last_done : runtime.due_at)}</strong></div>
-        <span class="status ${status}">${this._t(status)}</span>
+        ${this._statusChip(status, this._t(status))}
         <div class="timeline-progress"><strong>${Math.round(progress)}%</strong><div class="progress"><div style="width:${progress}%"></div></div></div>
         <div class="timeline-actions">${actions}</div>
       </div>

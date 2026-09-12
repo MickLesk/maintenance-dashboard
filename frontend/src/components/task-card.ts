@@ -27,7 +27,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <header>
         <label class="task-select" title="${this._t("selectedTasksCount")}"><input type="checkbox" data-select-task="${task.id}" ${this._selectedTasks.has(task.id) ? "checked" : ""}><span></span></label>
         <div class="title-row"><span class="icon-chip" style="${task.icon_color ? `color:${this._html(task.icon_color)}` : ""}"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span><div><h3>${this._html(task.name)}</h3><p>${this._categoryLabel(task)} · ${this._scheduleSummary(task)}${task.area_name ? ` · ${this._html(task.area_name)}` : ""}</p></div></div>
-        <span class="status ${status}">${completed ? this._t("archived") : this._t(status)}</span>
+        ${this._statusChip(status, completed ? this._t("archived") : this._t(status))}
       </header>
       <div class="workflow-strip"><span class="workflow-state state-${this._html(workflowState)}">${this._workflowStateLabel(workflowState)}</span>${task.blocked_by ? `<span class="workflow-metric blocked-by">${this._t("dependencyBlocked").replace("{name}", this._html(task.blocked_by.name || ""))}</span>` : ""}${execution.sequence ? `<span class="workflow-metric">${this._t("runLabel")} ${execution.sequence}</span>` : ""}${showChecklist ? `<span class="workflow-metric">${this._t("checklist")}: ${checklistProgress.done}/${checklistProgress.total}</span>` : ""}${showChecklist && this._procedureMinutes(checklist) ? `<span class="workflow-metric">${this._t("procedureDuration").replace("{minutes}", String(this._procedureMinutes(checklist)))}</span>` : ""}</div>
       ${task.description ? `<p class="description">${this._html(task.description)}</p>` : ""}

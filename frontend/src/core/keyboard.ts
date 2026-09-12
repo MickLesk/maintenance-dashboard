@@ -15,12 +15,15 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   },
 
   _handleKeyboard(event) {
-    const target = event.target;
+    // The listener sits on window, so event.target is retargeted to the host
+    // element and the real focus has to come from the composed path.
+    const target = event.composedPath?.()[0] || event.target;
     const tag = String(target?.tagName || "").toLowerCase();
     const editable = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
     if (event.key === "Escape") {
       if (this._closeTopOverlay()) { event.preventDefault(); return; }
     }
+    if (this._handleOverlayKeys(event)) return;
     if (editable && event.key !== "Escape") return;
     if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const search = this.shadowRoot?.querySelector("#search");
@@ -35,6 +38,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   },
 
   _closeTopOverlay() {
+    if (this._snoozeMenu || this._workflowMenu) { this._snoozeMenu = null; this._workflowMenu = null; this._render(); return true; }
     if (this._shortcutsDialogOpen) { this._shortcutsDialogOpen = false; this._render(); return true; }
     if (this._dialog) { this._closeDialog(); return true; }
     if (this._taskDetailId) { this._taskDetailId = ""; this._taskNoteDraft = ""; this._taskDetailTab = "overview"; this._render(); return true; }

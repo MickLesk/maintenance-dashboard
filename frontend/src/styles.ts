@@ -148,7 +148,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .title-row p,.description{color:var(--md-sys-color-on-surface-variant);}
     .icon-chip{width:74px;height:74px;border-radius:20px;background:color-mix(in srgb,var(--task-accent,var(--md-sys-color-primary)) 22%,var(--md-sys-color-surface-container-high));color:var(--md-sys-color-on-surface);}
     .icon-chip ha-icon{--mdc-icon-size:38px;}
-    .status{min-height:34px;padding:0 16px;display:inline-flex;align-items:center;background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-success);}
+    .status{min-height:34px;padding:0 16px;display:inline-flex;align-items:center;background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-success);}.status ha-icon{--mdc-icon-size:15px;width:15px;height:15px;flex:0 0 auto;margin-inline-end:5px}
     .status.warning{background:color-mix(in srgb,var(--md-sys-color-warning) 14%,var(--md-sys-color-surface-container));color:var(--md-sys-color-warning);}
     .status.critical,.status.overdue{background:color-mix(in srgb,var(--md-sys-color-error) 15%,var(--md-sys-color-surface-container));color:var(--md-sys-color-error);}
     .status.snoozed{background:color-mix(in srgb,var(--md-sys-color-primary) 15%,var(--md-sys-color-surface-container));color:var(--md-sys-color-primary);}
