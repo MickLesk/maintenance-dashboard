@@ -132,6 +132,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
   async _load() {
     if (!this.hass?.callWS) return;
     try {
+      await this._flushPendingCompletions();
       this._state = await this.hass.callWS({ type: "maintenance_dashboard/get_state" });
       this._error = "";
       if (!this._layoutInitialized) {

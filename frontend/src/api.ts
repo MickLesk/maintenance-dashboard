@@ -322,6 +322,12 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       this._showToast(this._t("actionDone"));
       return true;
     } catch (error) {
+      if (this._isConnectionError(error)) {
+        this._queueCompletion(id, details);
+        this._showToast(this._t("offlineQueueSaved"));
+        this._render();
+        return true;
+      }
       this._showToast(String(error));
       return false;
     }

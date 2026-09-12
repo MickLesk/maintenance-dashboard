@@ -39,7 +39,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     const toggle = secondary.length
       ? `<button class="status-metrics-toggle ghost small" data-action="toggle-status-metrics"><ha-icon icon="${this._statusMetricsExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>${this._t(this._statusMetricsExpanded ? "lessMetrics" : "moreMetrics")}</button>`
       : "";
-    const items = [...primary, ...(this._statusMetricsExpanded ? secondary : []), toggle].filter(Boolean);
+    const items = [this._pendingBadgeHtml(), ...primary, ...(this._statusMetricsExpanded ? secondary : []), toggle].filter(Boolean);
     if (!items.length) return "";
     return `<section class="dashboard-status-line">${items.join("<i></i>")}</section>`;
   },

@@ -20,6 +20,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     onAll("[data-open-attachment]", "click", el => this._openAttachment(el.dataset.openAttachment));
     on("statisticsYear", "change", event => this._loadStatisticsYear(Number(event.target.value)));
     onAll("[data-action='reload-statistics']", "click", () => { this._statisticsData = null; this._render(); });
+    onAll("[data-action='flush-pending']", "click", () => this._load());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));

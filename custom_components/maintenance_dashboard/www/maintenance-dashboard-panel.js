@@ -640,6 +640,10 @@ const I18N = Object.freeze({
     "numberFormatHint": "Bestimmt Dezimal- und Tausendertrennzeichen für Beträge.",
     "numberFormatSpace": "1 234,56",
     "off": "Aus",
+    "offlineQueued": "wartend",
+    "offlineQueueHint": "Ohne Verbindung erfasste Erledigungen. Sie gehen raus, sobald Home Assistant wieder erreichbar ist.",
+    "offlineQueueSaved": "Keine Verbindung. Erledigung gespeichert und später gesendet.",
+    "offlineQueueSent": "{count} Erledigung(en) gesendet",
     "ok": "OK",
     "onboarding": "Schnellstart",
     "onboardingHint": "Wähle ein oder mehrere Starter-Pakete. Du kannst jeden Eintrag anschließend individuell anpassen oder später weitere Vorlagen ergänzen.",
@@ -1548,6 +1552,10 @@ const I18N = Object.freeze({
     "numberFormatHint": "Controls the decimal and thousands separators used for amounts.",
     "numberFormatSpace": "1 234,56",
     "off": "Off",
+    "offlineQueued": "waiting",
+    "offlineQueueHint": "Completions recorded without a connection. They are sent as soon as Home Assistant is reachable.",
+    "offlineQueueSaved": "No connection. Completion saved and sent later.",
+    "offlineQueueSent": "{count} completion(s) sent",
     "ok": "OK",
     "onboarding": "Quick start",
     "onboardingHint": "Choose one or more starter packs. Every entry can be adjusted afterwards and more templates can be added later.",
@@ -2196,6 +2204,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
   async _load() {
     if (!this.hass?.callWS) return;
     try {
+      await this._flushPendingCompletions();
       this._state = await this.hass.callWS({ type: "maintenance_dashboard/get_state" });
       this._error = "";
       if (!this._layoutInitialized) {
@@ -2506,6 +2515,78 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 });
 
 
+// ---- frontend/src/core/offline.ts ----
+// @ts-nocheck
+// Completions happen in the cellar, the garage, the loft: exactly where the
+// connection is not. A completion that cannot reach the backend is kept and
+// replayed instead of being lost with the tap that recorded it.
+const PENDING_KEY = "maintenance-dashboard-pending-completions";
+const MAX_PENDING = 50;
+
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _pendingCompletions() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  },
+
+  _writePendingCompletions(items) {
+    try {
+      if (items.length) localStorage.setItem(PENDING_KEY, JSON.stringify(items.slice(-MAX_PENDING)));
+      else localStorage.removeItem(PENDING_KEY);
+    } catch { /* ignore quota */ }
+  },
+
+  _queueCompletion(taskId, details) {
+    const items = this._pendingCompletions();
+    items.push({ task_id: taskId, details: details || {}, queued_at: new Date().toISOString() });
+    this._writePendingCompletions(items);
+  },
+
+  _isConnectionError(error) {
+    if (this.hass?.connection?.connected === false) return true;
+    const message = String(error?.message || error || "").toLowerCase();
+    return ["connection", "disconnect", "not_connected", "websocket", "timeout", "network", "failed to fetch"]
+      .some(marker => message.includes(marker));
+  },
+
+  async _flushPendingCompletions() {
+    const items = this._pendingCompletions();
+    if (!items.length || !this.hass?.callWS || this._flushingCompletions) return false;
+    this._flushingCompletions = true;
+    let sent = 0;
+    try {
+      while (items.length) {
+        const entry = items[0];
+        try {
+          await this.hass.callWS({ type: "maintenance_dashboard/mark_done", task_id: entry.task_id, ...(entry.details || {}) });
+        } catch (error) {
+          if (this._isConnectionError(error)) break;
+          // A completion the backend rejects would block the queue forever.
+          console.warn("maintenance-dashboard: dropped a queued completion", error);
+        }
+        items.shift();
+        sent += 1;
+        this._writePendingCompletions(items);
+      }
+    } finally {
+      this._flushingCompletions = false;
+    }
+    if (sent) this._showToast(this._t("offlineQueueSent").replace("{count}", String(sent)));
+    return sent > 0;
+  },
+
+  _pendingBadgeHtml() {
+    const count = this._pendingCompletions().length;
+    if (!count) return "";
+    return `<button class="status-metric warning" data-action="flush-pending" title="${this._t("offlineQueueHint")}"><ha-icon icon="mdi:cloud-off-outline"></ha-icon><b>${count}</b> ${this._t("offlineQueued")}</button>`;
+  },
+});
+
+
 // ---- frontend/src/components/app-header.ts ----
 // Header and navigation rendering.
 Object.assign(MaintenanceDashboardPanel.prototype, {
@@ -2568,7 +2649,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     const toggle = secondary.length
       ? `<button class="status-metrics-toggle ghost small" data-action="toggle-status-metrics"><ha-icon icon="${this._statusMetricsExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>${this._t(this._statusMetricsExpanded ? "lessMetrics" : "moreMetrics")}</button>`
       : "";
-    const items = [...primary, ...(this._statusMetricsExpanded ? secondary : []), toggle].filter(Boolean);
+    const items = [this._pendingBadgeHtml(), ...primary, ...(this._statusMetricsExpanded ? secondary : []), toggle].filter(Boolean);
     if (!items.length) return "";
     return `<section class="dashboard-status-line">${items.join("<i></i>")}</section>`;
   },
@@ -4560,6 +4641,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     onAll("[data-open-attachment]", "click", el => this._openAttachment(el.dataset.openAttachment));
     on("statisticsYear", "change", event => this._loadStatisticsYear(Number(event.target.value)));
     onAll("[data-action='reload-statistics']", "click", () => { this._statisticsData = null; this._render(); });
+    onAll("[data-action='flush-pending']", "click", () => this._load());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));
@@ -5172,6 +5254,12 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       this._showToast(this._t("actionDone"));
       return true;
     } catch (error) {
+      if (this._isConnectionError(error)) {
+        this._queueCompletion(id, details);
+        this._showToast(this._t("offlineQueueSaved"));
+        this._render();
+        return true;
+      }
       this._showToast(String(error));
       return false;
     }
