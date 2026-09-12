@@ -95,6 +95,11 @@ const I18N = Object.freeze({
     "active": "Offen",
     "activitiesToday": "Aktivitäten heute",
     "activitiesWeek": "Aktivitäten diese Woche",
+    "activityActiveDays": "Aktive Tage",
+    "activityBusiest": "Aktivster Tag",
+    "activityHint": "Ein Quadrat pro Tag des gewählten Jahres.",
+    "activityLess": "Weniger",
+    "activityMore": "Mehr",
     "add": "Wartungseintrag hinzufügen",
     "addChecklistItem": "Checklistenpunkt hinzufügen",
     "addDocument": "Datei anfügen",
@@ -816,6 +821,7 @@ const I18N = Object.freeze({
     "starterPacks": "Starter-Pakete",
     "startSetup": "Auswahl hinzufügen",
     "statistics": "Statistik",
+    "statisticsActivity": "Erledigungs-Kalender",
     "statisticsCosts": "Kosten",
     "statisticsEffort": "Aufwand",
     "statisticsForecast": "Prognose",
@@ -984,6 +990,11 @@ const I18N = Object.freeze({
     "active": "Open",
     "activitiesToday": "Activities today",
     "activitiesWeek": "Activities this week",
+    "activityActiveDays": "Active days",
+    "activityBusiest": "Busiest day",
+    "activityHint": "One square per day of the selected year.",
+    "activityLess": "Less",
+    "activityMore": "More",
     "add": "Add maintenance task",
     "addChecklistItem": "Add checklist item",
     "addDocument": "Attach file",
@@ -1705,6 +1716,7 @@ const I18N = Object.freeze({
     "starterPacks": "Starter packs",
     "startSetup": "Add selection",
     "statistics": "Statistics",
+    "statisticsActivity": "Completion calendar",
     "statisticsCosts": "Costs",
     "statisticsEffort": "Effort",
     "statisticsForecast": "Forecast",
@@ -2991,6 +3003,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     return `<section class="page-header page-header-compact"><div><h1>${this._t("statistics")}</h1><p>${this._t("statisticsHint")}</p></div><div class="settings-utility-bar">${yearSelect}${this._documentsEnabled() ? `<button class="ghost" data-action="open-report" title="${this._t("openReportHint")}"><ha-icon icon="mdi:file-document-outline"></ha-icon>${this._t("openReport")}</button>` : ""}</div></section>
       ${this._budgetHtml()}
       ${empty ? this._emptyMessage("mdi:chart-box-outline", this._t("statisticsNeedsHistory")) : `
+      ${this._statsActivityHtml(stats)}
       ${this._statsReliabilityHtml(stats)}
       ${this._statsRunsHtml(stats)}
       ${this._statsEffortHtml(stats)}
@@ -3011,6 +3024,70 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     if (!rows.length) return `<p class="section-hint">${this._t("noDataYet")}</p>`;
     const peak = Math.max(1, max ?? Math.max(...rows.map(row => row.value)));
     return `<div class="statistics-bars">${rows.map(row => `<article class="statistics-bar-row"><div class="statistics-bar-label"><strong>${row.label}</strong>${row.hint ? `<small>${row.hint}</small>` : ""}</div><div class="statistics-bar-track"><span style="width:${Math.max(2, Math.round(row.value / peak * 100))}%"></span></div><strong>${format ? format(row.value) : row.value}</strong></article>`).join("")}</div>`;
+  },
+
+  _activityLevel(count, max) {
+    return count ? Math.min(4, Math.ceil((count / Math.max(1, max)) * 4)) : 0;
+  },
+
+  _statsActivityHtml(stats) {
+    const activity = stats.activity || {};
+    const days = activity.days || {};
+    const year = Number(stats.year || new Date().getFullYear());
+    if (!activity.total) {
+      return this._statSection("mdi:calendar-check", this._t("statisticsActivity"), this._t("activityHint"),
+        `<p class="section-hint">${this._t("noDataYet")}</p>`);
+    }
+
+    const locale = this._lang() === "de" ? "de-DE" : "en-US";
+    const dayFormat = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
+    const monthFormat = new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" });
+    const weekdayFormat = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
+    const cell = 11;
+    const step = 14;
+    const left = 30;
+    const top = 16;
+
+    // Weeks run as columns, so the grid starts on the Monday of week one.
+    const start = new Date(Date.UTC(year, 0, 1));
+    start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+    const columns = Math.ceil(((Date.UTC(year, 11, 31) - start.getTime()) / 86400000 + 1) / 7);
+
+    const cells = [];
+    const months = [];
+    let lastMonth = -1;
+    for (let column = 0; column < columns; column += 1) {
+      for (let row = 0; row < 7; row += 1) {
+        const date = new Date(start);
+        date.setUTCDate(start.getUTCDate() + column * 7 + row);
+        if (date.getUTCFullYear() !== year) continue;
+        const key = date.toISOString().slice(0, 10);
+        const count = days[key] || 0;
+        if (date.getUTCMonth() !== lastMonth && date.getUTCDate() <= 7) {
+          lastMonth = date.getUTCMonth();
+          months.push(`<text class="heatmap-label" x="${left + column * step}" y="10">${monthFormat.format(date)}</text>`);
+        }
+        cells.push(`<rect class="heatmap-cell level-${this._activityLevel(count, activity.max)}" x="${left + column * step}" y="${top + row * step}" width="${cell}" height="${cell}" rx="3"><title>${this._html(dayFormat.format(date))} · ${count} ${this._t("reportCompletions")}</title></rect>`);
+      }
+    }
+    const weekdays = [0, 2, 4].map(row =>
+      `<text class="heatmap-label" x="0" y="${top + row * step + 9}">${weekdayFormat.format(new Date(Date.UTC(2024, 0, 1 + row)))}</text>`);
+
+    const width = left + columns * step;
+    const height = top + 7 * step;
+    const busiest = activity.busiest;
+    const cards = [
+      this._statCard(this._t("reportCompletions"), activity.total),
+      this._statCard(this._t("activityActiveDays"), activity.active_days),
+      busiest ? this._statCard(this._t("activityBusiest"), `${busiest.count}×`, this._html(dayFormat.format(new Date(`${busiest.date}T00:00:00Z`)))) : "",
+    ].filter(Boolean).join("");
+    const summary = `${activity.total} ${this._t("reportCompletions")}, ${activity.active_days} ${this._t("activityActiveDays")}`;
+    const legend = `<div class="heatmap-legend"><span>${this._t("activityLess")}</span>${[0, 1, 2, 3, 4].map(level => `<i class="level-${level}"></i>`).join("")}<span>${this._t("activityMore")}</span></div>`;
+
+    return this._statSection("mdi:calendar-check", this._t("statisticsActivity"), this._t("activityHint"),
+      `<div class="stat-card-grid">${cards}</div>
+       <div class="activity-heatmap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${this._t("statisticsActivity")}: ${summary}">${months.join("")}${weekdays.join("")}${cells.join("")}</svg></div>
+       ${legend}`);
   },
 
   _statsReliabilityHtml(stats) {
@@ -3100,8 +3177,10 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     }).join(" ");
     const latest = trend[trend.length - 1] || {};
-    return this._statSection("mdi:heart-pulse", this._t("healthTrend"), `${this._date(trend[0].date)} – ${this._date(latest.date)}`,
-      `<div class="health-trend"><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${this._t("healthTrend")}"><polyline points="${points}"></polyline></svg><strong>${latest.health ?? 0}%</strong></div>`);
+    const values = trend.map(item => Math.round(Number(item.health) || 0));
+    const hint = `${this._date(trend[0].date)} – ${this._date(latest.date)} · ↓ ${Math.min(...values)}% ↑ ${Math.max(...values)}%`;
+    return this._statSection("mdi:heart-pulse", this._t("healthTrend"), hint,
+      `<div class="health-trend"><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${this._t("healthTrend")}: ${latest.health ?? 0}%"><path class="health-area" d="M0,100 L${points.split(" ").join(" L")} L100,100 Z"></path><polyline points="${points}"></polyline></svg><strong>${latest.health ?? 0}%</strong></div>`);
   },
 
   _statsCostsHtml(stats, year) {
@@ -6808,7 +6887,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .statistics-columns h3{margin:0 0 8px;font-size:.85rem;color:var(--secondary-text-color)}
     .health-trend{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
     .health-trend svg{width:100%;height:90px}
-    .health-trend polyline{fill:none;stroke:var(--primary-color);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+    .health-trend polyline{fill:none;stroke:var(--primary-color);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}.health-trend path.health-area{fill:color-mix(in srgb,var(--primary-color) 16%,transparent);stroke:none}.statistics-panel{--heat-0:color-mix(in srgb,var(--primary-text-color) 9%,transparent);--heat-1:color-mix(in srgb,var(--primary-color) 28%,transparent);--heat-2:color-mix(in srgb,var(--primary-color) 50%,transparent);--heat-3:color-mix(in srgb,var(--primary-color) 74%,transparent);--heat-4:var(--primary-color)}.activity-heatmap{overflow-x:auto;padding-bottom:6px}.activity-heatmap svg{display:block;max-width:100%;height:auto}.heatmap-label{fill:var(--secondary-text-color);font-size:9px;font-weight:800}.heatmap-cell.level-0{fill:var(--heat-0)}.heatmap-cell.level-1{fill:var(--heat-1)}.heatmap-cell.level-2{fill:var(--heat-2)}.heatmap-cell.level-3{fill:var(--heat-3)}.heatmap-cell.level-4{fill:var(--heat-4)}.heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:10px;color:var(--secondary-text-color);font-size:.72rem;font-weight:850}.heatmap-legend i{width:11px;height:11px;border-radius:3px}.heatmap-legend i.level-0{background:var(--heat-0)}.heatmap-legend i.level-1{background:var(--heat-1)}.heatmap-legend i.level-2{background:var(--heat-2)}.heatmap-legend i.level-3{background:var(--heat-3)}.heatmap-legend i.level-4{background:var(--heat-4)}
     .health-trend strong{font-size:1.5rem}
 
     .history-axis{position:relative;display:grid;gap:10px;padding-left:26px}

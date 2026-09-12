@@ -307,6 +307,25 @@ def build_costs(history: list[dict[str, Any]], tasks: list[dict[str, Any]], year
     }
 
 
+def build_activity(history: list[dict[str, Any]], year: int) -> dict[str, Any]:
+    """Completions per calendar day, for the year heatmap."""
+    days: dict[str, int] = {}
+    for event in _completions(history, year):
+        created = _parse(event.get("created_at"))
+        if created is None:
+            continue
+        key = created.date().isoformat()
+        days[key] = days.get(key, 0) + 1
+    busiest = max(days.items(), key=lambda item: (item[1], item[0]), default=None)
+    return {
+        "days": days,
+        "max": max(days.values(), default=0),
+        "active_days": len(days),
+        "total": sum(days.values()),
+        "busiest": {"date": busiest[0], "count": busiest[1]} if busiest else None,
+    }
+
+
 def build_statistics(
     history: list[dict[str, Any]],
     tasks: list[dict[str, Any]],
@@ -331,6 +350,7 @@ def build_statistics(
         "by_month": costs["by_month"],
         "top_cost_tasks": costs["top_cost_tasks"] if cost_tracking else [],
         "is_current_year": target_year == moment.year,
+        "activity": build_activity(history, target_year),
         "reliability": build_reliability(history, task_names, target_year),
         "runs": build_runs(history, tasks, target_year),
         "effort": build_effort(history, tasks, target_year),
