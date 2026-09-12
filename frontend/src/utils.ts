@@ -136,11 +136,12 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       else if (key === "status" && this._state?.runtime?.[task.id]?.status !== value) return false;
       else if (key === "workflow" && String(task.workflow_state || "") !== value) return false;
       else if (key === "quality" && value === "issue" && !this._taskQualityIssues(task).length) return false;
-      else if (!["tag","prio","priority","due","status","workflow","quality"].includes(key)) free.push(token);
+      else if (key === "for" && !String(task.assignee || "").toLowerCase().includes(value)) return false;
+      else if (!["tag","prio","priority","due","status","workflow","quality","for"].includes(key)) free.push(token);
     }
     if (!free.length) return true;
     const freeQuery = free.join(" ");
-    return [task.name, task.description, task.area_name, task.category, task.custom_category, ...(task.tags || [])]
+    return [task.name, task.description, task.area_name, task.assignee, task.category, task.custom_category, ...(task.tags || [])]
       .filter(Boolean).join(" ").toLowerCase().includes(freeQuery);
   },
 
@@ -238,6 +239,16 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _knownAssignees() {
+    const names = new Map();
+    for (const task of this._state?.tasks || []) {
+      const name = String(task.assignee || "").trim();
+      if (name) names.set(name.toLowerCase(), name);
+    }
+    for (const name of this._knownPerformers()) names.set(name.toLowerCase(), name);
+    return [...names.values()].sort((a, b) => a.localeCompare(b, this._lang()));
+  },
+
   _knownPerformers() {
     const names = new Map();
     for (const event of this._state?.history || []) {

@@ -44,7 +44,7 @@ const DASHBOARD_WIDGET_KEYS = [
 const EMPTY = {
   name: "", type: "time", schedule_mode: "interval", calendar_repeat: "yearly", due_date: "",
   interval: "90", interval_unit: "days", entity_id: "", category: "general", custom_category: "",
-  area_id: "", area_name: "", priority: "3", icon: "mdi:wrench-clock", icon_color: "", card_color: "",
+  area_id: "", area_name: "", assignee: "", priority: "3", icon: "mdi:wrench-clock", icon_color: "", card_color: "",
   enabled: true, warning_threshold: "70", critical_threshold: "90", description: "", last_done: "",
   fixed_month: "9", fixed_day: "1", season: "autumn", tags: [], workflow_state: "open", asset_id: "", depends_on: "", checklist: [],
   completion_requirements_note: false, completion_requirements_material: false, completion_requirements_cost: false,

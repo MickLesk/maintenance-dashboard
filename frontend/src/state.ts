@@ -234,6 +234,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       custom_category: t.custom_category || "",
       area_id: t.area_id || "",
       area_name: t.area_name || "",
+      assignee: t.assignee || "",
       priority: String(t.priority || 3),
       icon: t.icon || "mdi:wrench-clock",
       icon_color: t.icon_color || "",
@@ -429,6 +430,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       custom_category: this._draft.category === "custom" ? this._draft.custom_category.trim() : undefined,
       area_id: this._draft.area_id || undefined,
       area_name: area?.name || this._draft.area_name || undefined,
+      assignee: String(this._draft.assignee || "").trim() || null,
       priority: Number(this._draft.priority) || 3,
       icon: this._draft.icon || "mdi:wrench-clock",
       icon_color: this._draft.icon_color || undefined,
@@ -514,9 +516,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     this._completionMaterial = "";
     this._completionCost = "";
     this._completionCurrency = this._defaultCurrency();
-    this._completionPerformedBy = "";
     this._completionAttachments = [];
     const task = (this._state?.tasks || []).find(x => x.id === id);
+    this._completionPerformedBy = task?.assignee || "";
     this._completionChecklist = Array.isArray(task?.checklist) ? task.checklist.map(item => ({ ...item })) : [];
     this._render();
   }

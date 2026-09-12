@@ -45,7 +45,7 @@ const DASHBOARD_WIDGET_KEYS = [
 const EMPTY = {
   name: "", type: "time", schedule_mode: "interval", calendar_repeat: "yearly", due_date: "",
   interval: "90", interval_unit: "days", entity_id: "", category: "general", custom_category: "",
-  area_id: "", area_name: "", priority: "3", icon: "mdi:wrench-clock", icon_color: "", card_color: "",
+  area_id: "", area_name: "", assignee: "", priority: "3", icon: "mdi:wrench-clock", icon_color: "", card_color: "",
   enabled: true, warning_threshold: "70", critical_threshold: "90", description: "", last_done: "",
   fixed_month: "9", fixed_day: "1", season: "autumn", tags: [], workflow_state: "open", asset_id: "", depends_on: "", checklist: [],
   completion_requirements_note: false, completion_requirements_material: false, completion_requirements_cost: false,
@@ -149,6 +149,9 @@ const I18N = Object.freeze({
     "assetSerial": "Seriennummer",
     "assetTasks": "Zugeordnete Aufgaben",
     "assetWarrantyUntil": "Garantie bis",
+    "assignee": "Zuständig",
+    "assigneePlaceholder": "Wer kümmert sich darum",
+    "assigneeSearchHint": "for:name findet die Aufgaben einer Person",
     "attachment": "Anhang",
     "attachment_store_near_limit": "Anhänge-Speicher fast voll",
     "attachmentStorage": "Anhänge-Speicher",
@@ -782,7 +785,7 @@ const I18N = Object.freeze({
     "scheduleMode": "Planung",
     "schemaLabel": "Schema",
     "search": "Suche",
-    "searchSyntaxHint": "Suchen… tag:garten prio:5 due:7 quality:issue",
+    "searchSyntaxHint": "Suchen… tag:garten prio:5 due:7 for:mickey",
     "seasonal": "Saisonal",
     "selectAllVisible": "Sichtbare auswählen",
     "selectedTasks": "ausgewählte Aufgaben",
@@ -1053,6 +1056,9 @@ const I18N = Object.freeze({
     "assetSerial": "Serial number",
     "assetTasks": "Linked tasks",
     "assetWarrantyUntil": "Warranty until",
+    "assignee": "Assigned to",
+    "assigneePlaceholder": "Who takes care of this",
+    "assigneeSearchHint": "for:name finds the tasks of one person",
     "attachment": "Attachment",
     "attachment_store_near_limit": "Attachment storage nearly full",
     "attachmentStorage": "Attachment storage",
@@ -1686,7 +1692,7 @@ const I18N = Object.freeze({
     "scheduleMode": "Schedule",
     "schemaLabel": "Schema",
     "search": "Search",
-    "searchSyntaxHint": "Search… tag:garden prio:5 due:7 quality:issue",
+    "searchSyntaxHint": "Search… tag:garden prio:5 due:7 for:mickey",
     "seasonal": "Seasonal",
     "selectAllVisible": "Select visible",
     "selectedTasks": "selected tasks",
@@ -2745,7 +2751,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     return `<article class="compact-task-row ${runtime.status || "unavailable"}" data-task-card="${this._html(task.id)}">
       <label class="task-select"><input type="checkbox" data-select-task="${task.id}" ${this._selectedTasks.has(task.id) ? "checked" : ""}><span></span></label>
       <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
-      <div class="grow"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
+      <div class="grow"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}${task.assignee ? ` · ${this._html(task.assignee)}` : ""}</small></div>
       <span>${this._date(runtime.due_at)}</span>${this._statusChip(runtime.status || "unavailable", this._t(runtime.status || "unavailable"))}
       ${actions}
     </article>`;
@@ -2780,7 +2786,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <div class="timeline-marker"><span></span></div>
       <div class="timeline-card" data-task-card="${this._html(task.id)}" style="--task-accent:${this._html(accent)}">
         <span class="icon-chip"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span>
-        <div class="timeline-main"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}</small></div>
+        <div class="timeline-main"><strong>${this._html(task.name)}</strong><small>${this._categoryLabel(task)} · ${this._scheduleSummary(task)} · ${this._workflowStateLabel(workflowState)}${task.assignee ? ` · ${this._html(task.assignee)}` : ""}</small></div>
         <div class="timeline-date"><span>${status === "completed" ? this._t("lastDone") : this._t("due")}</span><strong>${this._date(status === "completed" ? runtime.last_done : runtime.due_at)}</strong></div>
         ${this._statusChip(status, this._t(status))}
         <div class="timeline-progress"><strong>${Math.round(progress)}%</strong><div class="progress"><div style="width:${progress}%"></div></div></div>
@@ -2990,7 +2996,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         <div class="title-row"><span class="icon-chip" style="${task.icon_color ? `color:${this._html(task.icon_color)}` : ""}"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon></span><div><h3>${this._html(task.name)}</h3><p>${this._categoryLabel(task)} · ${this._scheduleSummary(task)}${task.area_name ? ` · ${this._html(task.area_name)}` : ""}</p></div></div>
         ${this._statusChip(status, completed ? this._t("archived") : this._t(status))}
       </header>
-      <div class="workflow-strip"><span class="workflow-state state-${this._html(workflowState)}">${this._workflowStateLabel(workflowState)}</span>${task.blocked_by ? `<span class="workflow-metric blocked-by">${this._t("dependencyBlocked").replace("{name}", this._html(task.blocked_by.name || ""))}</span>` : ""}${execution.sequence ? `<span class="workflow-metric">${this._t("runLabel")} ${execution.sequence}</span>` : ""}${showChecklist ? `<span class="workflow-metric">${this._t("checklist")}: ${checklistProgress.done}/${checklistProgress.total}</span>` : ""}${showChecklist && this._procedureMinutes(checklist) ? `<span class="workflow-metric">${this._t("procedureDuration").replace("{minutes}", String(this._procedureMinutes(checklist)))}</span>` : ""}</div>
+      <div class="workflow-strip"><span class="workflow-state state-${this._html(workflowState)}">${this._workflowStateLabel(workflowState)}</span>${task.blocked_by ? `<span class="workflow-metric blocked-by">${this._t("dependencyBlocked").replace("{name}", this._html(task.blocked_by.name || ""))}</span>` : ""}${execution.sequence ? `<span class="workflow-metric">${this._t("runLabel")} ${execution.sequence}</span>` : ""}${task.assignee ? `<span class="workflow-metric assignee"><ha-icon icon="mdi:account-outline"></ha-icon>${this._html(task.assignee)}</span>` : ""}${showChecklist ? `<span class="workflow-metric">${this._t("checklist")}: ${checklistProgress.done}/${checklistProgress.total}</span>` : ""}${showChecklist && this._procedureMinutes(checklist) ? `<span class="workflow-metric">${this._t("procedureDuration").replace("{minutes}", String(this._procedureMinutes(checklist)))}</span>` : ""}</div>
       ${task.description ? `<p class="description">${this._html(task.description)}</p>` : ""}
       ${task.tags?.length ? `<div class="tag-strip">${task.tags.slice(0, 6).map(tag => `<button data-quick-tag="${this._html(tag)}">#${this._html(tag)}</button>`).join("")}</div>` : ""}
       ${showChecklist ? `<div class="checklist-preview">${checklist.slice(0, 4).map((item, index) => `<label class="checklist-item ${item.done ? "done" : ""} ${item.required ? "is-required" : ""}"><input type="checkbox" data-toggle-checklist="${task.id}:${index}" ${item.done ? "checked" : ""} ${completed ? "disabled" : ""}><span>${this._html(item.label)}</span>${item.required ? `<span class="required-mark" aria-label="${this._t("required")}" title="${this._t("required")}"></span>` : ""}</label>`).join("")}${checklist.length > 4 ? `<small>${this._t("checklistMore").replace("{count}", String(checklist.length - 4))}</small>` : ""}</div>` : ""}
@@ -4181,6 +4187,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <div class="form-grid">${this._input("name", this._fieldLabel("name"), "text")}<label class="field"><span>${this._t("category")}</span><select data-draft="category">${CATEGORY_KEYS.map(k => `<option value="${k}" ${d.category === k ? "selected" : ""}>${this._t(k)}</option>`).join("")}</select></label>${d.category === "custom" ? this._input("custom_category", this._fieldLabel("custom_category", "ownCategory"), "text") : ""}<label class="field"><span>${this._t("area")}</span><select data-draft="area_id"><option value="">—</option>${areas.map(a => `<option value="${a.area_id}" ${d.area_id === a.area_id ? "selected" : ""}>${this._html(a.name)}</option>`).join("")}</select></label>${this._documentsEnabled() ? `<label class="field"><span>${this._t("asset")}</span><select data-draft="asset_id"><option value="">—</option>${this._assetList().map(asset => `<option value="${this._html(asset.id)}" ${d.asset_id === asset.id ? "selected" : ""}>${this._html(asset.name)}</option>`).join("")}</select></label>` : ""}<label class="field"><span>${this._t("dependsOn")}</span><select data-draft="depends_on"><option value="">${this._t("noDependency")}</option>${(this._state?.tasks || []).filter(task => !task.deleted && task.id !== d.id).map(task => `<option value="${this._html(task.id)}" ${d.depends_on === task.id ? "selected" : ""}>${this._html(task.name)}</option>`).join("")}</select><small class="field-hint">${this._t("dependsOnHint")}</small></label></div>
       <label class="entity-field"><span>${this._t("entity")}</span><ha-entity-picker id="entityPicker" allow-custom-entity></ha-entity-picker></label>
       <label class="description-field"><span>${this._t("description")}</span><textarea data-draft="description">${this._html(d.description)}</textarea></label>
+      <label class="field"><span>${this._t("assignee")}</span><input data-draft="assignee" type="text" list="maintenanceAssigneeOptions" value="${this._html(d.assignee || "")}" placeholder="${this._t("assigneePlaceholder")}"><datalist id="maintenanceAssigneeOptions">${this._knownAssignees().map(name => `<option value="${this._html(name)}"></option>`).join("")}</datalist></label>
       <label class="field"><span>${this._t("tags")}</span><input data-draft="tags" type="text" value="${this._html(Array.isArray(d.tags) ? d.tags.join(", ") : d.tags || "")}" placeholder="${this._t("tagPlaceholder")}"></label>
       <div class="wizard-split"><section class="inline-priority"><div class="priority-head"><div><h4>${this._t("priority")}</h4><p class="section-hint">${this._t("priorityHint")}</p></div><strong>${this._priorityLabel(d.priority)} (${d.priority}/5)</strong></div><input class="priority-slider" data-draft="priority" type="range" min="1" max="5" step="1" value="${this._html(d.priority || 3)}"><div class="priority-scale">${[1,2,3,4,5].map(p => `<span class="${Number(d.priority || 3) === p ? "active" : ""}">${this._priorityLabel(p)}</span>`).join("")}</div></section>${this._appearanceCompactHtml(d)}</div>
     </section>`;
@@ -5975,6 +5982,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       custom_category: t.custom_category || "",
       area_id: t.area_id || "",
       area_name: t.area_name || "",
+      assignee: t.assignee || "",
       priority: String(t.priority || 3),
       icon: t.icon || "mdi:wrench-clock",
       icon_color: t.icon_color || "",
@@ -6170,6 +6178,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       custom_category: this._draft.category === "custom" ? this._draft.custom_category.trim() : undefined,
       area_id: this._draft.area_id || undefined,
       area_name: area?.name || this._draft.area_name || undefined,
+      assignee: String(this._draft.assignee || "").trim() || null,
       priority: Number(this._draft.priority) || 3,
       icon: this._draft.icon || "mdi:wrench-clock",
       icon_color: this._draft.icon_color || undefined,
@@ -6255,9 +6264,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     this._completionMaterial = "";
     this._completionCost = "";
     this._completionCurrency = this._defaultCurrency();
-    this._completionPerformedBy = "";
     this._completionAttachments = [];
     const task = (this._state?.tasks || []).find(x => x.id === id);
+    this._completionPerformedBy = task?.assignee || "";
     this._completionChecklist = Array.isArray(task?.checklist) ? task.checklist.map(item => ({ ...item })) : [];
     this._render();
   }
@@ -6403,11 +6412,12 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       else if (key === "status" && this._state?.runtime?.[task.id]?.status !== value) return false;
       else if (key === "workflow" && String(task.workflow_state || "") !== value) return false;
       else if (key === "quality" && value === "issue" && !this._taskQualityIssues(task).length) return false;
-      else if (!["tag","prio","priority","due","status","workflow","quality"].includes(key)) free.push(token);
+      else if (key === "for" && !String(task.assignee || "").toLowerCase().includes(value)) return false;
+      else if (!["tag","prio","priority","due","status","workflow","quality","for"].includes(key)) free.push(token);
     }
     if (!free.length) return true;
     const freeQuery = free.join(" ");
-    return [task.name, task.description, task.area_name, task.category, task.custom_category, ...(task.tags || [])]
+    return [task.name, task.description, task.area_name, task.assignee, task.category, task.custom_category, ...(task.tags || [])]
       .filter(Boolean).join(" ").toLowerCase().includes(freeQuery);
   },
 
@@ -6505,6 +6515,16 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _knownAssignees() {
+    const names = new Map();
+    for (const task of this._state?.tasks || []) {
+      const name = String(task.assignee || "").trim();
+      if (name) names.set(name.toLowerCase(), name);
+    }
+    for (const name of this._knownPerformers()) names.set(name.toLowerCase(), name);
+    return [...names.values()].sort((a, b) => a.localeCompare(b, this._lang()));
+  },
+
   _knownPerformers() {
     const names = new Map();
     for (const event of this._state?.history || []) {
