@@ -85,7 +85,7 @@ from .notifications import (
     persistent_notification_payload,
     service_target,
 )
-from .analytics import build_costs, build_statistics, list_statistics_years
+from .analytics import build_asset_costs, build_costs, build_statistics, list_statistics_years
 from .assets import expiry_status, normalize_asset, normalize_assets, propose_assets_from_tasks
 from .consumption import build_forecast as build_consumption_forecast, normalize_consumption
 from .inventory import (
@@ -543,6 +543,10 @@ class MaintenanceManager:
             "statistics_years": list_statistics_years(self.history),
             "assets": _deepcopy_json(self._assets),
             "asset_expiries": expiry_status(self._assets),
+            # Walks the whole history, so only while the module is on.
+            "asset_costs": build_asset_costs(self.history, tasks)
+            if self._settings.get("modules", {}).get("documents")
+            else {},
             "media": _deepcopy_json(self._media),
             "parts": _deepcopy_json(self._parts),
             "restock_alerts": restock_alerts(

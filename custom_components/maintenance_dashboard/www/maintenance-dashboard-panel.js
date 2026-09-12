@@ -140,6 +140,9 @@ const I18N = Object.freeze({
     "assetImportHint": "Legt je Bereichsnamen eine Anlage an und verknüpft die zugehörigen Aufgaben. Du bestätigst jede einzeln.",
     "assetImportNone": "Keine Bereichsnamen gefunden, die sich anbieten.",
     "assetInstalledAt": "Eingebaut am",
+    "assetLifetimeCost": "Kosten bisher",
+    "assetLifetimeRuns": "Wartungen",
+    "assetLifetimeSince": "seit {date}",
     "assetLocation": "Ort",
     "assetLocationPlaceholder": "z. B. Keller, Garage",
     "assetManufacturer": "Hersteller",
@@ -1056,6 +1059,9 @@ const I18N = Object.freeze({
     "assetImportHint": "Creates one asset per area name and links its tasks. You confirm each one.",
     "assetImportNone": "No area names available to suggest.",
     "assetInstalledAt": "Installed on",
+    "assetLifetimeCost": "Cost so far",
+    "assetLifetimeRuns": "Maintenance runs",
+    "assetLifetimeSince": "since {date}",
     "assetLocation": "Location",
     "assetLocationPlaceholder": "e.g. basement, garage",
     "assetManufacturer": "Manufacturer",
@@ -3844,6 +3850,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     const tasks = this._assetTasks(asset.id);
     const open = this._folderOpen(asset.id);
     const meta = [asset.manufacturer, asset.model, asset.location].filter(Boolean).map(value => this._html(value)).join(" · ");
+    const lifetime = this._state?.asset_costs?.[asset.id];
     return `<article class="panel folder ${open ? "open" : ""}">
       <header class="folder-head">
         <button class="folder-toggle" data-folder-toggle="${this._html(asset.id)}" aria-expanded="${open ? "true" : "false"}">
@@ -3860,6 +3867,8 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
           ${asset.contract?.partner ? `<div><span>${this._t("contractPartner")}</span><strong>${this._html(asset.contract.partner)}</strong></div>` : ""}
           ${asset.contract?.expires_at ? `<div><span>${this._t("contractExpiresAt")}</span><strong>${this._date(asset.contract.expires_at)}</strong></div>` : ""}
           ${asset.installed_at ? `<div><span>${this._t("assetInstalledAt")}</span><strong>${this._date(asset.installed_at)}</strong></div>` : ""}
+          ${lifetime && this._costTrackingEnabled() ? `<div><span>${this._t("assetLifetimeCost")}</span><strong>${this._money(lifetime.cost)}</strong></div>` : ""}
+          ${lifetime ? `<div><span>${this._t("assetLifetimeRuns")}</span><strong>${lifetime.completions}${lifetime.first ? ` · ${this._t("assetLifetimeSince").replace("{date}", this._date(lifetime.first))}` : ""}</strong></div>` : ""}
         </div>
         ${tasks.length ? `<div class="asset-task-list">${tasks.map(task => `<button class="ghost small" data-open-task-detail="${this._html(task.id)}"><ha-icon icon="${this._html(task.icon || "mdi:wrench-clock")}"></ha-icon>${this._html(task.name)}</button>`).join("")}</div>` : ""}
         ${this._documentListHtml(docs)}

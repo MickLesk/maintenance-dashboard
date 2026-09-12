@@ -326,6 +326,35 @@ def build_activity(history: list[dict[str, Any]], year: int) -> dict[str, Any]:
     }
 
 
+def build_asset_costs(
+    history: list[dict[str, Any]],
+    tasks: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Lifetime maintenance cost per device.
+
+    Yearly cost answers what the house cost; this answers what one appliance
+    costs to keep, which is the number behind repair or replace.
+    """
+    asset_by_task = {str(task.get("id")): str(task.get("asset_id") or "") for task in tasks}
+    totals: dict[str, dict[str, Any]] = {}
+    for event in _completions(history):
+        asset_id = asset_by_task.get(str(event.get("task_id")) or "")
+        if not asset_id:
+            continue
+        bucket = totals.setdefault(asset_id, {"cost": 0.0, "completions": 0, "first": None, "last": None})
+        bucket["completions"] += 1
+        cost = _cost(event)
+        if cost is not None:
+            bucket["cost"] = round(bucket["cost"] + cost, 2)
+        created = event.get("created_at")
+        if created:
+            if bucket["first"] is None or str(created) < str(bucket["first"]):
+                bucket["first"] = created
+            if bucket["last"] is None or str(created) > str(bucket["last"]):
+                bucket["last"] = created
+    return totals
+
+
 def build_backlog(
     tasks: list[dict[str, Any]],
     due_by_task: dict[str, str | None],
