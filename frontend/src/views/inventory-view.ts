@@ -47,7 +47,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
           <ha-icon icon="${alert.out_of_stock ? "mdi:alert-octagon-outline" : "mdi:alert-outline"}"></ha-icon>
           <button class="ghost small" data-edit-part="${this._html(alert.part_id)}">${this._html(alert.name)}</button>
           <span>${this._num(alert.stock)} / ${this._num(alert.minimum)}</span>
-          <small>${alert.supplier ? this._html(alert.supplier) : ""}</small>
+          <small>${alert.reason === "demand" ? this._t("restockDemand").replace("{needed}", this._num(alert.needed)).replace("{shortfall}", this._num(alert.shortfall)) : ""}${alert.reason === "demand" && alert.supplier ? " · " : ""}${alert.supplier ? this._html(alert.supplier) : ""}</small>
         </div>`).join("")}</div></section>` : ""}
       ${parts.length
         ? `<section class="panel"><div class="meta-grid">

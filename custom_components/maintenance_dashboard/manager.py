@@ -88,7 +88,14 @@ from .notifications import (
 from .analytics import build_costs, build_statistics, list_statistics_years
 from .assets import expiry_status, normalize_asset, normalize_assets, propose_assets_from_tasks
 from .consumption import build_forecast as build_consumption_forecast, normalize_consumption
-from .inventory import budget_status, inventory_value, normalize_part, normalize_parts, restock_alerts
+from .inventory import (
+    budget_status,
+    inventory_value,
+    normalize_part,
+    normalize_parts,
+    restock_alerts,
+    upcoming_demand,
+)
 from .media import (
     MEDIA_DIRNAME,
     build_record,
@@ -538,7 +545,10 @@ class MaintenanceManager:
             "asset_expiries": expiry_status(self._assets),
             "media": _deepcopy_json(self._media),
             "parts": _deepcopy_json(self._parts),
-            "restock_alerts": restock_alerts(self._parts),
+            "restock_alerts": restock_alerts(
+                self._parts,
+                upcoming_demand(tasks, {key: value["due_at"] for key, value in runtime.items()}),
+            ),
             "inventory_value": inventory_value(self._parts),
             "budget_status": self._budget_status(),
             "storage": {
