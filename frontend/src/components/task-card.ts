@@ -35,13 +35,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       ${showChecklist ? `<div class="checklist-preview">${checklist.slice(0, 4).map((item, index) => `<label class="checklist-item ${item.done ? "done" : ""} ${item.required ? "is-required" : ""}"><input type="checkbox" data-toggle-checklist="${task.id}:${index}" ${item.done ? "checked" : ""} ${completed ? "disabled" : ""}><span>${this._html(item.label)}</span>${item.required ? `<span class="required-mark" aria-label="${this._t("required")}" title="${this._t("required")}"></span>` : ""}</label>`).join("")}${checklist.length > 4 ? `<small>${this._t("checklistMore").replace("{count}", String(checklist.length - 4))}</small>` : ""}</div>` : ""}
       <div class="progress-line"><span>${this._t("progress")}</span><strong>${Math.round(progress)}%</strong></div>
       <div class="progress"><div style="width:${progress}%"></div></div>
-      <div class="meta-grid">
-        <div><span>${this._t("lastDone")}</span><strong>${this._date(r.last_done)}</strong></div>
-        <div><span>${completed ? this._t("archived") : this._t("due")}</span><strong>${completed ? this._date(task.completed_at) : this._date(r.due_at)}</strong></div>
-        <div><span>${this._t("remainingLabel")}</span><strong>${completed ? "—" : this._remaining(r, task)}</strong></div>
-        <div><span>${this._t("priority")}</span><strong>${this._priorityLabel(task.priority)}<em>${task.priority}/5</em></strong></div>
+      <div class="meta-block">
+        <div class="meta-grid">
+          <div><span>${completed ? this._t("archived") : this._t("due")}</span><strong>${completed ? this._date(task.completed_at) : this._date(r.due_at)}</strong></div>
+          <div><span>${this._t("remainingLabel")}</span><strong>${completed ? "—" : this._remaining(r, task)}</strong></div>
+        </div>
+        <div class="meta-secondary">
+          <span>${this._t("lastDone")}: <b>${this._date(r.last_done)}</b></span>
+          <span>${this._t("priority")}: <b>${this._priorityLabel(task.priority)} ${task.priority}/5</b></span>
+        </div>
       </div>
-      
+
       ${snoozed ? `<div class="snooze-note"><ha-icon icon="mdi:pause-circle-outline"></ha-icon>${this._t("pausedUntil")} ${this._datetime(task.snoozed_until)}</div>` : ""}
       <footer class="actions">
         <button class="ghost icon-only" title="${this._t("edit")}" data-edit="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>

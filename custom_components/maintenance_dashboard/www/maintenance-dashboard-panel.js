@@ -2214,7 +2214,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
 
   _render() {
     const focusState = this._captureFocus();
-    const content = this._state ? this._viewHtml() : `<div class="loading">${this._t("loading")}</div>`;
+    const content = this._state ? this._viewHtml() : this._skeletonHtml();
     this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
     this._bind();
     this._applyAccessibility();
@@ -2713,7 +2713,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   _groupedLayoutHtml(tasks, mode) {
     const groups = this._smartTaskGroups(tasks).filter(group => group.tasks.length);
-    return `<section class="smart-task-groups">${groups.map(group => `<section class="smart-task-group"><header><div><h2>${this._t(group.label)}</h2><p>${group.tasks.length} ${this._t("taskLabel")}</p></div><span>${group.tasks.length}</span></header>${mode === "compact" ? `<div class="compact-task-list">${group.tasks.map(t => this._compactTaskRow(t)).join("")}</div>` : mode === "timeline" ? `<div class="timeline-view">${group.tasks.map(t => this._timelineTaskEntry(t)).join("")}</div>` : `<div class="task-grid">${group.tasks.map(t => this._taskCard(t)).join("")}</div>`}</section>`).join("")}</section>`;
+    return `<section class="smart-task-groups">${groups.map(group => `<section class="smart-task-group"><header><div><h2>${this._t(group.label)}</h2><p>${group.tasks.length} ${this._t("taskLabel")}</p></div><span>${group.tasks.length}</span></header>${mode === "compact" ? `<div class="compact-task-list">${group.tasks.map(t => this._compactTaskRow(t)).join("")}</div>` : mode === "timeline" ? `<div class="timeline-view">${this._timelineEntries(group.tasks)}</div>` : `<div class="task-grid">${group.tasks.map(t => this._taskCard(t)).join("")}</div>`}</section>`).join("")}</section>`;
   },
 
   _compactTaskRow(task) {
@@ -2731,6 +2731,21 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <span>${this._date(runtime.due_at)}</span>${this._statusChip(runtime.status || "unavailable", this._t(runtime.status || "unavailable"))}
       ${actions}
     </article>`;
+  },
+
+  // Month markers turn the stream into a plan; without them every entry reads the same.
+  _timelineEntries(tasks) {
+    let month = "";
+    const due = task => this._state?.runtime?.[task.id]?.due_at || "";
+    // A timeline is chronological; the smart sort of the other layouts is not.
+    return [...tasks].sort((a, b) => (due(a) || "9999").localeCompare(due(b) || "9999")).map(task => {
+      const key = due(task).slice(0, 7);
+      const marker = key && key !== month
+        ? `<div class="timeline-month"><span>${this._monthLabel(key)}</span></div>`
+        : "";
+      month = key || month;
+      return marker + this._timelineTaskEntry(task);
+    }).join("");
   },
 
   _timelineTaskEntry(task) {
@@ -2963,13 +2978,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       ${showChecklist ? `<div class="checklist-preview">${checklist.slice(0, 4).map((item, index) => `<label class="checklist-item ${item.done ? "done" : ""} ${item.required ? "is-required" : ""}"><input type="checkbox" data-toggle-checklist="${task.id}:${index}" ${item.done ? "checked" : ""} ${completed ? "disabled" : ""}><span>${this._html(item.label)}</span>${item.required ? `<span class="required-mark" aria-label="${this._t("required")}" title="${this._t("required")}"></span>` : ""}</label>`).join("")}${checklist.length > 4 ? `<small>${this._t("checklistMore").replace("{count}", String(checklist.length - 4))}</small>` : ""}</div>` : ""}
       <div class="progress-line"><span>${this._t("progress")}</span><strong>${Math.round(progress)}%</strong></div>
       <div class="progress"><div style="width:${progress}%"></div></div>
-      <div class="meta-grid">
-        <div><span>${this._t("lastDone")}</span><strong>${this._date(r.last_done)}</strong></div>
-        <div><span>${completed ? this._t("archived") : this._t("due")}</span><strong>${completed ? this._date(task.completed_at) : this._date(r.due_at)}</strong></div>
-        <div><span>${this._t("remainingLabel")}</span><strong>${completed ? "—" : this._remaining(r, task)}</strong></div>
-        <div><span>${this._t("priority")}</span><strong>${this._priorityLabel(task.priority)}<em>${task.priority}/5</em></strong></div>
+      <div class="meta-block">
+        <div class="meta-grid">
+          <div><span>${completed ? this._t("archived") : this._t("due")}</span><strong>${completed ? this._date(task.completed_at) : this._date(r.due_at)}</strong></div>
+          <div><span>${this._t("remainingLabel")}</span><strong>${completed ? "—" : this._remaining(r, task)}</strong></div>
+        </div>
+        <div class="meta-secondary">
+          <span>${this._t("lastDone")}: <b>${this._date(r.last_done)}</b></span>
+          <span>${this._t("priority")}: <b>${this._priorityLabel(task.priority)} ${task.priority}/5</b></span>
+        </div>
       </div>
-      
+
       ${snoozed ? `<div class="snooze-note"><ha-icon icon="mdi:pause-circle-outline"></ha-icon>${this._t("pausedUntil")} ${this._datetime(task.snoozed_until)}</div>` : ""}
       <footer class="actions">
         <button class="ghost icon-only" title="${this._t("edit")}" data-edit="${task.id}"><ha-icon icon="mdi:pencil"></ha-icon></button>
@@ -2987,7 +3006,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     // Statistics are no longer part of get_state, so fetch them on first view.
     if (!this._statisticsData) {
       this._loadStatisticsYear(this._statisticsYear);
-      return `<div class="loading">${this._t("loading")}</div>`;
+      return this._skeletonHtml("statistics");
     }
     if (this._statisticsData.error) {
       return `<section class="page-header page-header-compact"><div><h1>${this._t("statistics")}</h1></div></section>
@@ -6274,6 +6293,14 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     return this._toast ? `<aside class="toast"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._html(this._toast)}</span></aside>` : "";
   },
 
+  _skeletonHtml(kind = "view") {
+    const block = cls => `<div class="skeleton ${cls}"></div>`;
+    if (kind === "statistics") {
+      return `<div class="skeleton-view" aria-busy="true" aria-label="${this._t("loading")}">${block("line")}${block("bar")}${block("bar")}${block("card")}</div>`;
+    }
+    return `<div class="skeleton-view" aria-busy="true" aria-label="${this._t("loading")}">${block("line")}${block("bar")}<div class="skeleton-grid">${block("card")}${block("card")}${block("card")}</div></div>`;
+  },
+
   _emptyMessage(icon, message, action = "") {
     return `<section class="empty compact-empty"><div class="empty-orb"><ha-icon icon="${icon}"></ha-icon></div><h2>${this._html(message)}</h2>${action}</section>`;
   },
@@ -7232,6 +7259,31 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .linkish{justify-content:flex-start;text-align:left;padding:0;border:0;background:transparent;color:var(--md-sys-color-primary)}
     @media(max-width:900px){.compact-dashboard-toolbar .dashboard-main{grid-template-columns:1fr 1fr}.compact-dashboard-toolbar .search{grid-column:1/-1}.compact-dashboard-toolbar .layout-switch{grid-column:1/-1;width:100%}.compact-dashboard-toolbar .completed-label{display:none}.statistics-summary,.platform-status-grid{grid-template-columns:1fr}.statistics-bar-row{grid-template-columns:1fr;gap:8px}}
     @media(max-width:760px){.hero-actions{grid-template-columns:repeat(4,1fr)}.nav span{display:none}.compact-dashboard-toolbar .dashboard-main{grid-template-columns:1fr}.task-card footer.actions{display:grid;grid-template-columns:44px 1fr auto;gap:8px}.detail-tabs button span{display:none}}
+    .title-row h3{overflow-wrap:break-word;hyphens:auto}
+    .title-row>div{min-width:0}
+    .task-card::before{content:"";position:absolute;left:0;top:22px;bottom:22px;width:4px;border-radius:0 4px 4px 0;background:var(--task-accent,var(--md-sys-color-primary))}
+    .task-card.ok::before{opacity:.45}
+    .meta-block{display:grid;gap:10px;align-content:start}
+    .meta-secondary{display:flex;flex-wrap:wrap;gap:4px 18px;color:var(--md-sys-color-on-surface-variant);font-size:.78rem;font-weight:800}
+    .meta-secondary b{color:var(--md-sys-color-on-surface);font-weight:850}
+    .skeleton-view{display:grid;gap:16px;padding:18px 0}
+    .skeleton{border-radius:20px;background:linear-gradient(100deg,var(--md-sys-color-surface-container) 30%,var(--md-sys-color-surface-container-high) 50%,var(--md-sys-color-surface-container) 70%);background-size:220% 100%;animation:skeleton-sweep 1.4s ease-in-out infinite}
+    .skeleton.line{height:18px;border-radius:9px}.skeleton.bar{height:46px}.skeleton.card{height:250px}
+    .skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+    @keyframes skeleton-sweep{from{background-position:180% 0}to{background-position:-40% 0}}
+    @media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+    @media print{
+      :host{background:#fff;color:#000}
+      .hero-actions,.toolbar,.dashboard-toolbar,.layout-switch,.actions,.fab,.toast,.dialog-backdrop,.status-metrics-toggle,.tag-strip button,.task-select{display:none!important}
+      .shell{padding:0;max-width:none}
+      .task-grid{grid-template-columns:1fr 1fr;gap:10px}
+      .task-card,.timeline-card,.panel{min-height:0;padding:10px;break-inside:avoid;border:1px solid #999;background:#fff;box-shadow:none}
+      .task-card h3,.task-card strong,.timeline-main strong{color:#000}
+      .progress{border:1px solid #999}
+    }
+    .timeline-month{position:relative;margin:14px 0 8px;color:var(--md-sys-color-on-surface-variant);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .timeline-month::before{content:"";position:absolute;left:-47px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--md-sys-color-outline-variant)}
+    @media(max-width:760px){.timeline-month::before{left:-27px}}
   </style>`;
   }
 });

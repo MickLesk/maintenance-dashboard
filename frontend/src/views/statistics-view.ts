@@ -4,7 +4,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     // Statistics are no longer part of get_state, so fetch them on first view.
     if (!this._statisticsData) {
       this._loadStatisticsYear(this._statisticsYear);
-      return `<div class="loading">${this._t("loading")}</div>`;
+      return this._skeletonHtml("statistics");
     }
     if (this._statisticsData.error) {
       return `<section class="page-header page-header-compact"><div><h1>${this._t("statistics")}</h1></div></section>

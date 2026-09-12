@@ -210,7 +210,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   _groupedLayoutHtml(tasks, mode) {
     const groups = this._smartTaskGroups(tasks).filter(group => group.tasks.length);
-    return `<section class="smart-task-groups">${groups.map(group => `<section class="smart-task-group"><header><div><h2>${this._t(group.label)}</h2><p>${group.tasks.length} ${this._t("taskLabel")}</p></div><span>${group.tasks.length}</span></header>${mode === "compact" ? `<div class="compact-task-list">${group.tasks.map(t => this._compactTaskRow(t)).join("")}</div>` : mode === "timeline" ? `<div class="timeline-view">${group.tasks.map(t => this._timelineTaskEntry(t)).join("")}</div>` : `<div class="task-grid">${group.tasks.map(t => this._taskCard(t)).join("")}</div>`}</section>`).join("")}</section>`;
+    return `<section class="smart-task-groups">${groups.map(group => `<section class="smart-task-group"><header><div><h2>${this._t(group.label)}</h2><p>${group.tasks.length} ${this._t("taskLabel")}</p></div><span>${group.tasks.length}</span></header>${mode === "compact" ? `<div class="compact-task-list">${group.tasks.map(t => this._compactTaskRow(t)).join("")}</div>` : mode === "timeline" ? `<div class="timeline-view">${this._timelineEntries(group.tasks)}</div>` : `<div class="task-grid">${group.tasks.map(t => this._taskCard(t)).join("")}</div>`}</section>`).join("")}</section>`;
   },
 
   _compactTaskRow(task) {
@@ -228,6 +228,21 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <span>${this._date(runtime.due_at)}</span>${this._statusChip(runtime.status || "unavailable", this._t(runtime.status || "unavailable"))}
       ${actions}
     </article>`;
+  },
+
+  // Month markers turn the stream into a plan; without them every entry reads the same.
+  _timelineEntries(tasks) {
+    let month = "";
+    const due = task => this._state?.runtime?.[task.id]?.due_at || "";
+    // A timeline is chronological; the smart sort of the other layouts is not.
+    return [...tasks].sort((a, b) => (due(a) || "9999").localeCompare(due(b) || "9999")).map(task => {
+      const key = due(task).slice(0, 7);
+      const marker = key && key !== month
+        ? `<div class="timeline-month"><span>${this._monthLabel(key)}</span></div>`
+        : "";
+      month = key || month;
+      return marker + this._timelineTaskEntry(task);
+    }).join("");
   },
 
   _timelineTaskEntry(task) {

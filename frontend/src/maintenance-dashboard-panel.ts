@@ -176,7 +176,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
 
   _render() {
     const focusState = this._captureFocus();
-    const content = this._state ? this._viewHtml() : `<div class="loading">${this._t("loading")}</div>`;
+    const content = this._state ? this._viewHtml() : this._skeletonHtml();
     this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
     this._bind();
     this._applyAccessibility();

@@ -73,6 +73,14 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     return this._toast ? `<aside class="toast"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._html(this._toast)}</span></aside>` : "";
   },
 
+  _skeletonHtml(kind = "view") {
+    const block = cls => `<div class="skeleton ${cls}"></div>`;
+    if (kind === "statistics") {
+      return `<div class="skeleton-view" aria-busy="true" aria-label="${this._t("loading")}">${block("line")}${block("bar")}${block("bar")}${block("card")}</div>`;
+    }
+    return `<div class="skeleton-view" aria-busy="true" aria-label="${this._t("loading")}">${block("line")}${block("bar")}<div class="skeleton-grid">${block("card")}${block("card")}${block("card")}</div></div>`;
+  },
+
   _emptyMessage(icon, message, action = "") {
     return `<section class="empty compact-empty"><div class="empty-orb"><ha-icon icon="${icon}"></ha-icon></div><h2>${this._html(message)}</h2>${action}</section>`;
   },
