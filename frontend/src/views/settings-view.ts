@@ -47,6 +47,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         <div><h1>${this._t("settings")}</h1><p>${this._t("settingsDescription")}</p></div>
         <div class="settings-utility-bar">
           <button class="ghost" data-action="open-onboarding"><ha-icon icon="mdi:rocket-launch-outline"></ha-icon>${this._t("onboarding")}</button>
+          <button class="ghost" data-action="open-labels"><ha-icon icon="mdi:qrcode"></ha-icon>${this._t("labelSheet")}</button>
           <button class="ghost" data-action="diagnostics"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("diagnostics")}</button>
         </div>
       </section>

@@ -620,6 +620,20 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .timeline-month{position:relative;margin:14px 0 8px;color:var(--md-sys-color-on-surface-variant);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .timeline-month::before{content:"";position:absolute;left:-47px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--md-sys-color-outline-variant)}
     @media(max-width:760px){.timeline-month::before{left:-27px}}
+    .label-sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+    .label-card{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--md-sys-color-outline-variant);border-radius:16px;background:#fff;color:#000}
+    .label-card .qr{flex:0 0 auto;width:96px;height:96px}
+    .label-text{min-width:0;display:grid;gap:2px}
+    .label-text strong{font-size:.95rem;overflow-wrap:break-word;color:#000}
+    .label-text small{font-size:.72rem;color:#444}
+    @media print{
+      .labels-open>*:not(.labels-backdrop){display:none!important}
+      .labels-backdrop{position:static;display:block!important;padding:0;background:#fff}
+      .labels-backdrop .dialog{width:100%;max-height:none;border:0;border-radius:0;box-shadow:none;background:#fff}
+      .labels-backdrop .dialog>header,.labels-backdrop .dialog>footer{display:none!important}
+      .labels-backdrop .dialog-body{padding:0}
+      .label-card{break-inside:avoid;border-color:#999}
+    }
   </style>`;
   }
 });

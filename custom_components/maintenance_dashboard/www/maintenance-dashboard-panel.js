@@ -504,6 +504,9 @@ const I18N = Object.freeze({
     "keyboardShortcuts": "Tastenkürzel",
     "keyboardShortcutsHint": "Schnellzugriff im Dashboard.",
     "label": "Bezeichnung",
+    "labelSheet": "QR-Etiketten",
+    "labelSheetHint": "Ein Etikett pro Aufgabe. Gescannt öffnet es die Aufgabe am Handy, direkt vor dem Gerät.",
+    "labelTooLong": "Link zu lang für ein Etikett",
     "lastAutomaticBackup": "Letztes automatisches Backup",
     "lastDigest": "Letzter Digest",
     "lastDone": "Zuletzt erledigt",
@@ -699,6 +702,7 @@ const I18N = Object.freeze({
     "previousTask": "Vorherige Aufgabe",
     "previousValue": "Vorher",
     "previousYear": "Vorjahr",
+    "print": "Drucken",
     "priority": "Priorität",
     "priority1": "Niedrig",
     "priority2": "Normal",
@@ -1416,6 +1420,9 @@ const I18N = Object.freeze({
     "keyboardShortcuts": "Keyboard shortcuts",
     "keyboardShortcutsHint": "Quick access in the dashboard.",
     "label": "Label",
+    "labelSheet": "QR labels",
+    "labelSheetHint": "One label per task. Scanning it opens that task on the phone, in front of the appliance.",
+    "labelTooLong": "Link too long for a label",
     "lastAutomaticBackup": "Last automatic backup",
     "lastDigest": "Last digest",
     "lastDone": "Last done",
@@ -1611,6 +1618,7 @@ const I18N = Object.freeze({
     "previousTask": "Previous task",
     "previousValue": "Before",
     "previousYear": "Previous year",
+    "print": "Print",
     "priority": "Priority",
     "priority1": "Low",
     "priority2": "Normal",
@@ -2108,6 +2116,8 @@ class MaintenanceDashboardPanel extends HTMLElement {
     this._taskDetailTab = "overview";
     this._mobileActionTaskId = "";
     this._qualityDialogOpen = false;
+    this._labelsDialogOpen = false;
+    this._labelFilter = "";
     this._statusMetricsExpanded = false;
     this._templateImportOpen = false;
     this._templateImportPayload = "";
@@ -2192,7 +2202,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
 
   get hass() { return this._hass; }
 
-  connectedCallback() { this._restoreUiState(); this._load(); this._render(); this._bindKeyboard(); }
+  connectedCallback() { this._restoreUiState(); this._applyDeepLink(); this._load(); this._render(); this._bindKeyboard(); }
 
   disconnectedCallback() { if (this._unsubscribe) this._unsubscribe(); this._unbindKeyboard(); }
 
@@ -2250,7 +2260,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
   _render() {
     const focusState = this._captureFocus();
     const content = this._state ? this._viewHtml() : this._skeletonHtml();
-    this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
+    this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}${this._labelsDialogOpen ? " labels-open" : ""}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._labelsDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
     this._bind();
     this._applyAccessibility();
     this._persistUiState();
@@ -2311,6 +2321,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   _writeUiState(patch) {
     const next = { ...this._readUiState(), ...patch };
     try { localStorage.setItem(this._uiStorageKey(), JSON.stringify(next)); } catch { /* ignore quota */ }
+  },
+
+  // A printed label or a shared link can point straight at one task.
+  _applyDeepLink() {
+    try {
+      const taskId = new URLSearchParams(window.location.search).get("task");
+      if (!taskId) return;
+      this._view = "dashboard";
+      this._taskDetailId = taskId;
+      this._taskDetailTab = "overview";
+    } catch { /* no usable location */ }
   },
 
   _restoreUiState() {
@@ -2378,6 +2399,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     if (this._dialog) { this._closeDialog(); return true; }
     if (this._taskDetailId) { this._taskDetailId = ""; this._taskNoteDraft = ""; this._taskDetailTab = "overview"; this._render(); return true; }
     if (this._mobileActionTaskId) { this._mobileActionTaskId = ""; this._render(); return true; }
+    if (this._labelsDialogOpen) { this._labelsDialogOpen = false; this._render(); return true; }
     if (this._qualityDialogOpen) { this._qualityDialogOpen = false; this._render(); return true; }
     if (this._templateImportOpen) { this._templateImportOpen = false; this._templateImportPreview = null; this._render(); return true; }
     if (this._bulkPreview) { this._bulkPreview = null; this._render(); return true; }
@@ -2585,6 +2607,331 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     return `<button class="status-metric warning" data-action="flush-pending" title="${this._t("offlineQueueHint")}"><ha-icon icon="mdi:cloud-off-outline"></ha-icon><b>${count}</b> ${this._t("offlineQueued")}</button>`;
   },
 });
+
+
+// ---- frontend/src/core/qr.ts ----
+// @ts-nocheck
+// Byte mode QR encoder, error correction level M, versions 1 to 10. Printed
+// labels have to work in a cellar with no internet, so no CDN and no runtime
+// dependency. scripts/verify_qr.mjs checks the matrices against the reference
+// implementation in python-qrcode.
+const QR_EC_LEVEL_BITS = 0b00;
+const QR_CAPACITY = [14, 26, 42, 62, 84, 106, 122, 152, 180, 213];
+const QR_BLOCKS = [
+  [10, [[1, 16]]],
+  [16, [[1, 28]]],
+  [26, [[1, 44]]],
+  [18, [[2, 32]]],
+  [24, [[2, 43]]],
+  [16, [[4, 27]]],
+  [18, [[4, 31]]],
+  [22, [[2, 38], [2, 39]]],
+  [22, [[3, 36], [2, 37]]],
+  [26, [[4, 43], [1, 44]]],
+];
+const QR_ALIGNMENT = [[], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+
+const QR_EXP = new Array(512);
+const QR_LOG = new Array(256);
+for (let i = 0, value = 1; i < 255; i += 1) {
+  QR_EXP[i] = value;
+  QR_LOG[value] = i;
+  value <<= 1;
+  if (value & 0x100) value ^= 0x11d;
+}
+for (let i = 255; i < 512; i += 1) QR_EXP[i] = QR_EXP[i - 255];
+
+function qrMultiply(a, b) {
+  return a && b ? QR_EXP[QR_LOG[a] + QR_LOG[b]] : 0;
+}
+
+function qrGenerator(degree) {
+  let poly = [1];
+  for (let i = 0; i < degree; i += 1) {
+    const next = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j += 1) {
+      next[j] ^= poly[j];
+      next[j + 1] ^= qrMultiply(poly[j], QR_EXP[i]);
+    }
+    poly = next;
+  }
+  return poly;
+}
+
+function qrRemainder(data, degree) {
+  const generator = qrGenerator(degree);
+  const buffer = [...data, ...new Array(degree).fill(0)];
+  for (let i = 0; i < data.length; i += 1) {
+    const factor = buffer[i];
+    if (!factor) continue;
+    for (let j = 0; j < generator.length; j += 1) buffer[i + j] ^= qrMultiply(generator[j], factor);
+  }
+  return buffer.slice(data.length);
+}
+
+// BCH remainders for the format and version areas.
+function qrBch(value, generator, bits) {
+  let result = value << (bits - 1);
+  const top = 1 << (bits + generator.toString(2).length - 2);
+  for (let probe = top; probe >= 1 << (bits - 1); probe >>= 1) {
+    if (result & probe) result ^= generator * (probe / (1 << (generator.toString(2).length - 1)));
+  }
+  return result;
+}
+
+function qrFormatBits(mask) {
+  const data = (QR_EC_LEVEL_BITS << 3) | mask;
+  let remainder = data << 10;
+  for (let i = 4; i >= 0; i -= 1) {
+    if (remainder & (1 << (i + 10))) remainder ^= 0x537 << i;
+  }
+  return ((data << 10) | remainder) ^ 0x5412;
+}
+
+function qrVersionBits(version) {
+  let remainder = version << 12;
+  for (let i = 5; i >= 0; i -= 1) {
+    if (remainder & (1 << (i + 12))) remainder ^= 0x1f25 << i;
+  }
+  return (version << 12) | remainder;
+}
+
+function qrEncodeBytes(bytes, version) {
+  const [ecPerBlock, groups] = QR_BLOCKS[version - 1];
+  const countBits = version >= 10 ? 16 : 8;
+  const bits = [];
+  const push = (value, length) => {
+    for (let i = length - 1; i >= 0; i -= 1) bits.push((value >> i) & 1);
+  };
+  push(0b0100, 4);
+  push(bytes.length, countBits);
+  for (const byte of bytes) push(byte, 8);
+
+  const dataCodewords = groups.reduce((total, [count, size]) => total + count * size, 0);
+  const capacityBits = dataCodewords * 8;
+  push(0, Math.min(4, capacityBits - bits.length));
+  while (bits.length % 8) bits.push(0);
+
+  const codewords = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    codewords.push(bits.slice(i, i + 8).reduce((value, bit) => (value << 1) | bit, 0));
+  }
+  for (let i = 0; codewords.length < dataCodewords; i += 1) codewords.push(i % 2 ? 0x11 : 0xec);
+
+  const blocks = [];
+  let offset = 0;
+  for (const [count, size] of groups) {
+    for (let i = 0; i < count; i += 1) {
+      const data = codewords.slice(offset, offset + size);
+      offset += size;
+      blocks.push({ data, ec: qrRemainder(data, ecPerBlock) });
+    }
+  }
+
+  const result = [];
+  const longest = Math.max(...blocks.map(block => block.data.length));
+  for (let i = 0; i < longest; i += 1) {
+    for (const block of blocks) if (i < block.data.length) result.push(block.data[i]);
+  }
+  for (let i = 0; i < ecPerBlock; i += 1) {
+    for (const block of blocks) result.push(block.ec[i]);
+  }
+  return result;
+}
+
+function qrPenalty(matrix) {
+  const size = matrix.length;
+  let score = 0;
+  const run = line => {
+    let total = 0;
+    let length = 1;
+    for (let i = 1; i < size; i += 1) {
+      if (line[i] === line[i - 1]) {
+        length += 1;
+      } else {
+        if (length >= 5) total += length - 2;
+        length = 1;
+      }
+    }
+    return total + (length >= 5 ? length - 2 : 0);
+  };
+  for (let i = 0; i < size; i += 1) {
+    score += run(matrix[i]);
+    score += run(matrix.map(row => row[i]));
+  }
+  for (let y = 0; y < size - 1; y += 1) {
+    for (let x = 0; x < size - 1; x += 1) {
+      const cell = matrix[y][x];
+      if (cell === matrix[y][x + 1] && cell === matrix[y + 1][x] && cell === matrix[y + 1][x + 1]) score += 3;
+    }
+  }
+  const pattern = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+  const reversed = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1];
+  const matches = line => {
+    let total = 0;
+    for (let i = 0; i + 11 <= size; i += 1) {
+      const slice = line.slice(i, i + 11);
+      if (slice.every((cell, index) => cell === pattern[index])) total += 40;
+      if (slice.every((cell, index) => cell === reversed[index])) total += 40;
+    }
+    return total;
+  };
+  for (let i = 0; i < size; i += 1) {
+    score += matches(matrix[i]);
+    score += matches(matrix.map(row => row[i]));
+  }
+  const dark = matrix.flat().reduce((total, cell) => total + cell, 0);
+  score += Math.floor(Math.abs((dark * 100) / (size * size) - 50) / 5) * 10;
+  return score;
+}
+
+function qrMaskBit(mask, x, y) {
+  switch (mask) {
+    case 0: return (x + y) % 2 === 0;
+    case 1: return y % 2 === 0;
+    case 2: return x % 3 === 0;
+    case 3: return (x + y) % 3 === 0;
+    case 4: return (Math.floor(y / 2) + Math.floor(x / 3)) % 2 === 0;
+    case 5: return ((x * y) % 2) + ((x * y) % 3) === 0;
+    case 6: return (((x * y) % 2) + ((x * y) % 3)) % 2 === 0;
+    default: return (((x + y) % 2) + ((x * y) % 3)) % 2 === 0;
+  }
+}
+
+function qrBuild(codewords, version, mask) {
+  const size = version * 4 + 17;
+  const matrix = Array.from({ length: size }, () => new Array(size).fill(0));
+  const reserved = Array.from({ length: size }, () => new Array(size).fill(false));
+
+  const finder = (originX, originY) => {
+    for (let y = -1; y <= 7; y += 1) {
+      for (let x = -1; x <= 7; x += 1) {
+        const px = originX + x;
+        const py = originY + y;
+        if (px < 0 || py < 0 || px >= size || py >= size) continue;
+        const inside = x >= 0 && x <= 6 && y >= 0 && y <= 6;
+        const edge = inside && (x === 0 || x === 6 || y === 0 || y === 6);
+        const core = x >= 2 && x <= 4 && y >= 2 && y <= 4;
+        matrix[py][px] = edge || core ? 1 : 0;
+        reserved[py][px] = true;
+      }
+    }
+  };
+  finder(0, 0);
+  finder(size - 7, 0);
+  finder(0, size - 7);
+
+  for (let i = 8; i < size - 8; i += 1) {
+    const bit = i % 2 === 0 ? 1 : 0;
+    matrix[6][i] = bit;
+    matrix[i][6] = bit;
+    reserved[6][i] = true;
+    reserved[i][6] = true;
+  }
+
+  const alignment = QR_ALIGNMENT[version - 1];
+  const last = alignment[alignment.length - 1];
+  for (const centerY of alignment) {
+    for (const centerX of alignment) {
+      // The three corners are taken by the finder patterns.
+      if (centerX === 6 && centerY === 6) continue;
+      if (centerX === 6 && centerY === last) continue;
+      if (centerX === last && centerY === 6) continue;
+      for (let y = -2; y <= 2; y += 1) {
+        for (let x = -2; x <= 2; x += 1) {
+          matrix[centerY + y][centerX + x] = Math.max(Math.abs(x), Math.abs(y)) !== 1 ? 1 : 0;
+          reserved[centerY + y][centerX + x] = true;
+        }
+      }
+    }
+  }
+
+  matrix[size - 8][8] = 1;
+  reserved[size - 8][8] = true;
+  for (let i = 0; i <= 8; i += 1) {
+    if (i !== 6) { reserved[8][i] = true; reserved[i][8] = true; }
+  }
+  for (let i = 0; i < 8; i += 1) {
+    reserved[8][size - 1 - i] = true;
+    reserved[size - 1 - i][8] = true;
+  }
+  if (version >= 7) {
+    for (let i = 0; i < 18; i += 1) {
+      reserved[Math.floor(i / 3)][size - 11 + (i % 3)] = true;
+      reserved[size - 11 + (i % 3)][Math.floor(i / 3)] = true;
+    }
+  }
+
+  const bits = [];
+  for (const codeword of codewords) {
+    for (let i = 7; i >= 0; i -= 1) bits.push((codeword >> i) & 1);
+  }
+  let index = 0;
+  let upward = true;
+  for (let right = size - 1; right > 0; right -= 2) {
+    if (right === 6) right = 5;
+    for (let step = 0; step < size; step += 1) {
+      const y = upward ? size - 1 - step : step;
+      for (const x of [right, right - 1]) {
+        if (reserved[y][x]) continue;
+        const bit = index < bits.length ? bits[index] : 0;
+        index += 1;
+        matrix[y][x] = qrMaskBit(mask, x, y) ? bit ^ 1 : bit;
+      }
+    }
+    upward = !upward;
+  }
+
+  const format = qrFormatBits(mask);
+  for (let i = 0; i < 15; i += 1) {
+    const bit = (format >> i) & 1;
+    if (i < 6) matrix[i][8] = bit;
+    else if (i === 6) matrix[7][8] = bit;
+    else if (i === 7) matrix[8][8] = bit;
+    else if (i === 8) matrix[8][7] = bit;
+    else matrix[8][14 - i] = bit;
+
+    if (i < 8) matrix[8][size - 1 - i] = bit;
+    else matrix[size - 15 + i][8] = bit;
+  }
+
+  if (version >= 7) {
+    const info = qrVersionBits(version);
+    for (let i = 0; i < 18; i += 1) {
+      const bit = (info >> i) & 1;
+      matrix[Math.floor(i / 3)][size - 11 + (i % 3)] = bit;
+      matrix[size - 11 + (i % 3)][Math.floor(i / 3)] = bit;
+    }
+  }
+  return matrix;
+}
+
+function qrMatrix(text) {
+  const bytes = [...new TextEncoder().encode(String(text))];
+  const version = QR_CAPACITY.findIndex(capacity => bytes.length <= capacity) + 1;
+  if (!version) throw new Error("qr: text too long");
+  const codewords = qrEncodeBytes(bytes, version);
+  let best = null;
+  for (let mask = 0; mask < 8; mask += 1) {
+    const matrix = qrBuild(codewords, version, mask);
+    const penalty = qrPenalty(matrix);
+    if (!best || penalty < best.penalty) best = { matrix, penalty };
+  }
+  return best.matrix;
+}
+
+function qrSvg(text, { size = 128, label = "" } = {}) {
+  const matrix = qrMatrix(text);
+  const quiet = 4;
+  const span = matrix.length + quiet * 2;
+  const path = [];
+  for (let y = 0; y < matrix.length; y += 1) {
+    for (let x = 0; x < matrix.length; x += 1) {
+      if (matrix[y][x]) path.push(`M${x + quiet} ${y + quiet}h1v1h-1z`);
+    }
+  }
+  return `<svg class="qr" viewBox="0 0 ${span} ${span}" width="${size}" height="${size}" role="img" aria-label="${label}" shape-rendering="crispEdges"><rect width="${span}" height="${span}" fill="#fff"></rect><path d="${path.join("")}" fill="#000"></path></svg>`;
+}
 
 
 // ---- frontend/src/components/app-header.ts ----
@@ -3837,6 +4184,50 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 });
 
 
+// ---- frontend/src/dialogs/labels-dialog.ts ----
+// @ts-nocheck
+// Printable QR labels. Maintenance happens in front of the appliance, so the
+// link to a task belongs on the appliance.
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _taskDeepLink(taskId) {
+    const base = `${window.location.origin}${window.location.pathname}`;
+    return `${base}?task=${encodeURIComponent(taskId)}`;
+  },
+
+  _labelTasks() {
+    return (this._state?.tasks || [])
+      .filter(task => !task.deleted && task.enabled !== false)
+      .filter(task => !this._labelFilter || task.id === this._labelFilter || task.asset_id === this._labelFilter)
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), this._lang()));
+  },
+
+  _labelsDialogHtml() {
+    if (!this._labelsDialogOpen) return "";
+    const tasks = this._labelTasks();
+    const cards = tasks.map(task => {
+      const link = this._taskDeepLink(task.id);
+      let code = "";
+      try {
+        code = qrSvg(link, { size: 132, label: this._html(task.name) });
+      } catch {
+        code = `<p class="section-hint">${this._t("labelTooLong")}</p>`;
+      }
+      return `<article class="label-card">${code}<div class="label-text">
+        <strong>${this._html(task.name)}</strong>
+        <small>${this._categoryLabel(task)}${task.area_name ? ` · ${this._html(task.area_name)}` : ""}</small>
+        <small>${this._scheduleSummary(task)}</small>
+      </div></article>`;
+    }).join("");
+
+    return `<div class="dialog-backdrop labels-backdrop"><section class="dialog wide labels-dialog">
+      <header><div class="dialog-title-block"><h2>${this._t("labelSheet")}</h2><p class="section-hint">${this._t("labelSheetHint")}</p></div><button class="icon" data-action="close-labels"><ha-icon icon="mdi:close"></ha-icon></button></header>
+      <div class="dialog-body">${tasks.length ? `<div class="label-sheet">${cards}</div>` : `<p class="section-hint">${this._t("noDataYet")}</p>`}</div>
+      <footer><button class="ghost" data-action="close-labels">${this._t("cancel")}</button><button class="primary" data-action="print-labels"><ha-icon icon="mdi:printer"></ha-icon>${this._t("print")}</button></footer>
+    </section></div>`;
+  },
+});
+
+
 // ---- frontend/src/dialogs/shortcuts-dialog.ts ----
 // Keyboard shortcuts help dialog.
 Object.assign(MaintenanceDashboardPanel.prototype, {
@@ -3930,6 +4321,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         <div><h1>${this._t("settings")}</h1><p>${this._t("settingsDescription")}</p></div>
         <div class="settings-utility-bar">
           <button class="ghost" data-action="open-onboarding"><ha-icon icon="mdi:rocket-launch-outline"></ha-icon>${this._t("onboarding")}</button>
+          <button class="ghost" data-action="open-labels"><ha-icon icon="mdi:qrcode"></ha-icon>${this._t("labelSheet")}</button>
           <button class="ghost" data-action="diagnostics"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("diagnostics")}</button>
         </div>
       </section>
@@ -4642,6 +5034,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     on("statisticsYear", "change", event => this._loadStatisticsYear(Number(event.target.value)));
     onAll("[data-action='reload-statistics']", "click", () => { this._statisticsData = null; this._render(); });
     onAll("[data-action='flush-pending']", "click", () => this._load());
+    onAll("[data-action='open-labels']", "click", () => { this._labelsDialogOpen = true; this._render(); });
+    onAll("[data-action='close-labels']", "click", () => { this._labelsDialogOpen = false; this._render(); });
+    onAll("[data-action='print-labels']", "click", () => window.print());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));
@@ -7441,6 +7836,20 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     .timeline-month{position:relative;margin:14px 0 8px;color:var(--md-sys-color-on-surface-variant);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .timeline-month::before{content:"";position:absolute;left:-47px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--md-sys-color-outline-variant)}
     @media(max-width:760px){.timeline-month::before{left:-27px}}
+    .label-sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+    .label-card{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--md-sys-color-outline-variant);border-radius:16px;background:#fff;color:#000}
+    .label-card .qr{flex:0 0 auto;width:96px;height:96px}
+    .label-text{min-width:0;display:grid;gap:2px}
+    .label-text strong{font-size:.95rem;overflow-wrap:break-word;color:#000}
+    .label-text small{font-size:.72rem;color:#444}
+    @media print{
+      .labels-open>*:not(.labels-backdrop){display:none!important}
+      .labels-backdrop{position:static;display:block!important;padding:0;background:#fff}
+      .labels-backdrop .dialog{width:100%;max-height:none;border:0;border-radius:0;box-shadow:none;background:#fff}
+      .labels-backdrop .dialog>header,.labels-backdrop .dialog>footer{display:none!important}
+      .labels-backdrop .dialog-body{padding:0}
+      .label-card{break-inside:avoid;border-color:#999}
+    }
   </style>`;
   }
 });

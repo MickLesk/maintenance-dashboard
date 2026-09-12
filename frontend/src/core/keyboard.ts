@@ -43,6 +43,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     if (this._dialog) { this._closeDialog(); return true; }
     if (this._taskDetailId) { this._taskDetailId = ""; this._taskNoteDraft = ""; this._taskDetailTab = "overview"; this._render(); return true; }
     if (this._mobileActionTaskId) { this._mobileActionTaskId = ""; this._render(); return true; }
+    if (this._labelsDialogOpen) { this._labelsDialogOpen = false; this._render(); return true; }
     if (this._qualityDialogOpen) { this._qualityDialogOpen = false; this._render(); return true; }
     if (this._templateImportOpen) { this._templateImportOpen = false; this._templateImportPreview = null; this._render(); return true; }
     if (this._bulkPreview) { this._bulkPreview = null; this._render(); return true; }

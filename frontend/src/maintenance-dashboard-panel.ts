@@ -36,6 +36,8 @@ class MaintenanceDashboardPanel extends HTMLElement {
     this._taskDetailTab = "overview";
     this._mobileActionTaskId = "";
     this._qualityDialogOpen = false;
+    this._labelsDialogOpen = false;
+    this._labelFilter = "";
     this._statusMetricsExpanded = false;
     this._templateImportOpen = false;
     this._templateImportPayload = "";
@@ -120,7 +122,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
 
   get hass() { return this._hass; }
 
-  connectedCallback() { this._restoreUiState(); this._load(); this._render(); this._bindKeyboard(); }
+  connectedCallback() { this._restoreUiState(); this._applyDeepLink(); this._load(); this._render(); this._bindKeyboard(); }
 
   disconnectedCallback() { if (this._unsubscribe) this._unsubscribe(); this._unbindKeyboard(); }
 
@@ -178,7 +180,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
   _render() {
     const focusState = this._captureFocus();
     const content = this._state ? this._viewHtml() : this._skeletonHtml();
-    this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
+    this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}${this._labelsDialogOpen ? " labels-open" : ""}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._labelsDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
     this._bind();
     this._applyAccessibility();
     this._persistUiState();

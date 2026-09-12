@@ -17,6 +17,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     try { localStorage.setItem(this._uiStorageKey(), JSON.stringify(next)); } catch { /* ignore quota */ }
   },
 
+  // A printed label or a shared link can point straight at one task.
+  _applyDeepLink() {
+    try {
+      const taskId = new URLSearchParams(window.location.search).get("task");
+      if (!taskId) return;
+      this._view = "dashboard";
+      this._taskDetailId = taskId;
+      this._taskDetailTab = "overview";
+    } catch { /* no usable location */ }
+  },
+
   _restoreUiState() {
     const saved = this._readUiState();
     if (["dashboard", "statistics", "history", "settings"].includes(saved.view)) this._view = saved.view;

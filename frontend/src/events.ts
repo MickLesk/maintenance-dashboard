@@ -21,6 +21,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     on("statisticsYear", "change", event => this._loadStatisticsYear(Number(event.target.value)));
     onAll("[data-action='reload-statistics']", "click", () => { this._statisticsData = null; this._render(); });
     onAll("[data-action='flush-pending']", "click", () => this._load());
+    onAll("[data-action='open-labels']", "click", () => { this._labelsDialogOpen = true; this._render(); });
+    onAll("[data-action='close-labels']", "click", () => { this._labelsDialogOpen = false; this._render(); });
+    onAll("[data-action='print-labels']", "click", () => window.print());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));
