@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+
 import copy
 from typing import Any
 
@@ -109,6 +111,8 @@ def default_settings() -> dict[str, Any]:
             "calendar_enabled": True,
             "calendar_include_snoozed": False,
             "calendar_event_duration_minutes": 60,
+            "ical_enabled": False,
+            "ical_token": "",
         },
         "modules": {name: False for name in MODULES},
         "budget": {},
@@ -265,6 +269,13 @@ def normalize_settings(settings: dict[str, Any] | None) -> dict[str, Any]:
     native["calendar_enabled"] = bool(native.get("calendar_enabled", True))
     native["calendar_include_snoozed"] = bool(native.get("calendar_include_snoozed", False))
     native["calendar_event_duration_minutes"] = _clamp_int(native.get("calendar_event_duration_minutes"), 60, 15, 1440)
+    native["ical_enabled"] = bool(native.get("ical_enabled", False))
+    # The feed is reachable without a Home Assistant login, so the token in the
+    # URL is the guard. Clearing it and saving hands out a fresh link.
+    token = str(native.get("ical_token") or "")
+    native["ical_token"] = token if native["ical_enabled"] and token else (
+        secrets.token_urlsafe(24) if native["ical_enabled"] else ""
+    )
 
     modules = normalized.setdefault("modules", {})
     for name in MODULES:

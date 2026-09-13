@@ -13,6 +13,7 @@ PANEL_ICON = "mdi:clipboard-list-outline"
 PANEL_ELEMENT = "maintenance-dashboard-panel"
 STATIC_URL = f"/api/{DOMAIN}/static"
 MEDIA_URL = f"/api/{DOMAIN}/media"
+ICAL_URL = f"/api/{DOMAIN}/calendar"
 PANEL_MODULE_URL = f"{STATIC_URL}/maintenance-dashboard-panel.js?v={VERSION}"
 DASHBOARD_URL = "/maintenance-dashboard"
 

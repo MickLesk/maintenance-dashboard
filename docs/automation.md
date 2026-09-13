@@ -163,3 +163,33 @@ which maintenance is due
 sentence file. Add your own phrasings there; the intent names are what matters.
 
 The response is spoken in the language of the request, falling back to English.
+
+## Calendar feed (iCal)
+
+The native calendar entity is only visible inside Home Assistant. For a phone
+calendar, a shared household calendar or the person who looks after the
+heating, **Settings → Platforms → Calendar feed** publishes the upcoming due
+dates as an iCal subscription:
+
+```text
+https://your-home-assistant/api/maintenance_dashboard/calendar/<token>.ics
+```
+
+Read this before switching it on:
+
+- The feed is **off by default**. Switching it on generates the token.
+- It answers **without a Home Assistant login**, because a calendar client
+  cannot log in. The token in the URL is the only guard, so treat the link like
+  a password.
+- **New link** replaces the token. The old link stops working immediately.
+- Switching the feed off deletes the token; switching it on again hands out a
+  different one.
+- A wrong token and a disabled feed both answer 404, so the response tells an
+  unwanted caller nothing.
+
+The feed carries the task name, the due date, the area, the priority and the
+schedule. Notes, costs, materials, people and photos stay inside Home
+Assistant.
+
+It follows the calendar platform settings for event duration and whether
+snoozed tasks are included.

@@ -24,6 +24,8 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     onAll("[data-action='open-labels']", "click", () => { this._labelsDialogOpen = true; this._render(); });
     onAll("[data-action='close-labels']", "click", () => { this._labelsDialogOpen = false; this._render(); });
     onAll("[data-action='print-labels']", "click", () => window.print());
+    onAll("[data-action='copy-ical-link']", "click", () => this._copyIcalLink());
+    onAll("[data-action='rotate-ical-link']", "click", () => this._rotateIcalLink());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));

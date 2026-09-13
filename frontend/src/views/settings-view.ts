@@ -116,7 +116,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
             <label class="check"><input id="todoIncludeDisabled" type="checkbox" ${native.todo_include_disabled === true ? "checked" : ""}>${this._t("todoIncludeDisabled")}</label>
             <label class="check"><input id="calendarPlatformEnabled" type="checkbox" ${native.calendar_enabled !== false ? "checked" : ""}>${this._t("calendarPlatform")}</label>
             <label class="check"><input id="calendarIncludeSnoozed" type="checkbox" ${native.calendar_include_snoozed === true ? "checked" : ""}>${this._t("calendarIncludeSnoozed")}</label>
+            <label class="check"><input id="icalEnabled" type="checkbox" ${native.ical_enabled === true ? "checked" : ""}>${this._t("icalFeed")}</label>
           </div>
+          ${native.ical_enabled && native.ical_path ? `<div class="dialog-section ical-section">
+            <p class="section-hint">${this._t("icalFeedHint")}</p>
+            <div class="ical-link-row">
+              <input class="ical-link" type="text" readonly value="${this._html(this._icalUrl(native.ical_path))}" aria-label="${this._t("icalFeed")}">
+              <button class="ghost small" data-action="copy-ical-link"><ha-icon icon="mdi:content-copy"></ha-icon>${this._t("copyLink")}</button>
+              <button class="ghost small" data-action="rotate-ical-link"><ha-icon icon="mdi:autorenew"></ha-icon>${this._t("icalNewLink")}</button>
+            </div>
+            <p class="section-hint">${this._t("icalFeedWarning")}</p>
+          </div>` : ""}
           <div class="form-grid"><label class="field"><span>${this._t("calendarDuration")}</span><input id="calendarEventDuration" type="number" min="15" max="1440" step="15" value="${Number(native.calendar_event_duration_minutes || 60)}"></label></div>
           <footer class="settings-section-footer"><button class="primary big" data-action="save-general-settings"><ha-icon icon="mdi:content-save"></ha-icon>${this._t("saveDashboardSettings")}</button></footer>
         </article>` : ""}

@@ -856,6 +856,8 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         calendar_enabled: this.shadowRoot.getElementById("calendarPlatformEnabled") ? Boolean(this.shadowRoot.getElementById("calendarPlatformEnabled")?.checked) : currentNative.calendar_enabled !== false,
         calendar_include_snoozed: this.shadowRoot.getElementById("calendarIncludeSnoozed") ? Boolean(this.shadowRoot.getElementById("calendarIncludeSnoozed")?.checked) : Boolean(currentNative.calendar_include_snoozed),
         calendar_event_duration_minutes: Number(this.shadowRoot.getElementById("calendarEventDuration")?.value || currentNative.calendar_event_duration_minutes || 60),
+        ical_enabled: this.shadowRoot.getElementById("icalEnabled") ? Boolean(this.shadowRoot.getElementById("icalEnabled")?.checked) : Boolean(currentNative.ical_enabled),
+        ical_token: this._rotateIcalToken ? "" : undefined,
       },
     };
     await this.hass.callWS({ type: "maintenance_dashboard/update_settings", patch });

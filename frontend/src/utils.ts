@@ -239,6 +239,30 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _icalUrl(path) {
+    return path ? `${window.location.origin}${path}` : "";
+  },
+
+  async _copyIcalLink() {
+    const path = this._state?.native_platforms?.ical_path;
+    if (!path) return;
+    try {
+      await navigator.clipboard.writeText(this._icalUrl(path));
+      this._showToast(this._t("copiedToClipboard"));
+    } catch {
+      this._showToast(this._t("copyFailed"));
+    }
+  },
+
+  async _rotateIcalLink() {
+    this._rotateIcalToken = true;
+    try {
+      await this._saveGeneralSettings();
+    } finally {
+      this._rotateIcalToken = false;
+    }
+  },
+
   _knownAssignees() {
     const names = new Map();
     for (const task of this._state?.tasks || []) {

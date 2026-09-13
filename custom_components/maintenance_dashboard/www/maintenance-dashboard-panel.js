@@ -289,7 +289,10 @@ const I18N = Object.freeze({
     "contractExpiresAt": "bis",
     "contractPartner": "Betreut von",
     "contractPartnerPlaceholder": "z. B. Heizung Müller",
+    "copiedToClipboard": "Link kopiert",
     "copyDiagnostics": "Diagnose kopieren",
+    "copyFailed": "Link konnte nicht kopiert werden",
+    "copyLink": "Kopieren",
     "costsByCategory": "Kosten nach Kategorie",
     "costsByMonth": "Kosten nach Monat",
     "costTracking": "Kosten erfassen",
@@ -471,6 +474,10 @@ const I18N = Object.freeze({
     "historyType": "Aktion",
     "hours": "Stunden",
     "household": "Haushalt",
+    "icalFeed": "Kalender-Feed (iCal)",
+    "icalFeedHint": "Diesen Link in einer Kalender-App abonnieren, um die anstehenden Fälligkeiten zu sehen.",
+    "icalFeedWarning": "Der Link funktioniert ohne Home-Assistant-Login. Wer ihn hat, kann die Fälligkeiten lesen. Ein neuer Link entwertet den alten.",
+    "icalNewLink": "Neuer Link",
     "icon": "Icon",
     "iconColor": "Iconfarbe",
     "importData": "Importieren",
@@ -1218,7 +1225,10 @@ const I18N = Object.freeze({
     "contractExpiresAt": "until",
     "contractPartner": "Looked after by",
     "contractPartnerPlaceholder": "e.g. Miller Heating",
+    "copiedToClipboard": "Link copied",
     "copyDiagnostics": "Copy diagnostics",
+    "copyFailed": "Could not copy the link",
+    "copyLink": "Copy",
     "costsByCategory": "Costs by category",
     "costsByMonth": "Costs by month",
     "costTracking": "Track costs",
@@ -1400,6 +1410,10 @@ const I18N = Object.freeze({
     "historyType": "Action",
     "hours": "Hours",
     "household": "Household",
+    "icalFeed": "Calendar feed (iCal)",
+    "icalFeedHint": "Subscribe to this link in any calendar app to see the upcoming due dates.",
+    "icalFeedWarning": "The link works without a Home Assistant login. Anyone who has it can read the due dates. Hand out a new link to revoke the old one.",
+    "icalNewLink": "New link",
     "icon": "Icon",
     "iconColor": "Icon color",
     "importData": "Import",
@@ -2143,6 +2157,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
     this._mobileActionTaskId = "";
     this._qualityDialogOpen = false;
     this._labelsDialogOpen = false;
+    this._rotateIcalToken = false;
     this._labelFilter = "";
     this._statusMetricsExpanded = false;
     this._templateImportOpen = false;
@@ -4437,7 +4452,17 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
             <label class="check"><input id="todoIncludeDisabled" type="checkbox" ${native.todo_include_disabled === true ? "checked" : ""}>${this._t("todoIncludeDisabled")}</label>
             <label class="check"><input id="calendarPlatformEnabled" type="checkbox" ${native.calendar_enabled !== false ? "checked" : ""}>${this._t("calendarPlatform")}</label>
             <label class="check"><input id="calendarIncludeSnoozed" type="checkbox" ${native.calendar_include_snoozed === true ? "checked" : ""}>${this._t("calendarIncludeSnoozed")}</label>
+            <label class="check"><input id="icalEnabled" type="checkbox" ${native.ical_enabled === true ? "checked" : ""}>${this._t("icalFeed")}</label>
           </div>
+          ${native.ical_enabled && native.ical_path ? `<div class="dialog-section ical-section">
+            <p class="section-hint">${this._t("icalFeedHint")}</p>
+            <div class="ical-link-row">
+              <input class="ical-link" type="text" readonly value="${this._html(this._icalUrl(native.ical_path))}" aria-label="${this._t("icalFeed")}">
+              <button class="ghost small" data-action="copy-ical-link"><ha-icon icon="mdi:content-copy"></ha-icon>${this._t("copyLink")}</button>
+              <button class="ghost small" data-action="rotate-ical-link"><ha-icon icon="mdi:autorenew"></ha-icon>${this._t("icalNewLink")}</button>
+            </div>
+            <p class="section-hint">${this._t("icalFeedWarning")}</p>
+          </div>` : ""}
           <div class="form-grid"><label class="field"><span>${this._t("calendarDuration")}</span><input id="calendarEventDuration" type="number" min="15" max="1440" step="15" value="${Number(native.calendar_event_duration_minutes || 60)}"></label></div>
           <footer class="settings-section-footer"><button class="primary big" data-action="save-general-settings"><ha-icon icon="mdi:content-save"></ha-icon>${this._t("saveDashboardSettings")}</button></footer>
         </article>` : ""}
@@ -5084,6 +5109,8 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     onAll("[data-action='open-labels']", "click", () => { this._labelsDialogOpen = true; this._render(); });
     onAll("[data-action='close-labels']", "click", () => { this._labelsDialogOpen = false; this._render(); });
     onAll("[data-action='print-labels']", "click", () => window.print());
+    onAll("[data-action='copy-ical-link']", "click", () => this._copyIcalLink());
+    onAll("[data-action='rotate-ical-link']", "click", () => this._rotateIcalLink());
     onAll("[data-completion-phase]", "click", el => { this._completionPhase = el.dataset.completionPhase; this._render(); });
     onAll("[data-action='create-asset']", "click", () => this._openAssetDialog(null));
     onAll("[data-edit-asset]", "click", el => this._openAssetDialog(el.dataset.editAsset));
@@ -6230,6 +6257,8 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
         calendar_enabled: this.shadowRoot.getElementById("calendarPlatformEnabled") ? Boolean(this.shadowRoot.getElementById("calendarPlatformEnabled")?.checked) : currentNative.calendar_enabled !== false,
         calendar_include_snoozed: this.shadowRoot.getElementById("calendarIncludeSnoozed") ? Boolean(this.shadowRoot.getElementById("calendarIncludeSnoozed")?.checked) : Boolean(currentNative.calendar_include_snoozed),
         calendar_event_duration_minutes: Number(this.shadowRoot.getElementById("calendarEventDuration")?.value || currentNative.calendar_event_duration_minutes || 60),
+        ical_enabled: this.shadowRoot.getElementById("icalEnabled") ? Boolean(this.shadowRoot.getElementById("icalEnabled")?.checked) : Boolean(currentNative.ical_enabled),
+        ical_token: this._rotateIcalToken ? "" : undefined,
       },
     };
     await this.hass.callWS({ type: "maintenance_dashboard/update_settings", patch });
@@ -7048,6 +7077,30 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _icalUrl(path) {
+    return path ? `${window.location.origin}${path}` : "";
+  },
+
+  async _copyIcalLink() {
+    const path = this._state?.native_platforms?.ical_path;
+    if (!path) return;
+    try {
+      await navigator.clipboard.writeText(this._icalUrl(path));
+      this._showToast(this._t("copiedToClipboard"));
+    } catch {
+      this._showToast(this._t("copyFailed"));
+    }
+  },
+
+  async _rotateIcalLink() {
+    this._rotateIcalToken = true;
+    try {
+      await this._saveGeneralSettings();
+    } finally {
+      this._rotateIcalToken = false;
+    }
+  },
+
   _knownAssignees() {
     const names = new Map();
     for (const task of this._state?.tasks || []) {
@@ -7919,6 +7972,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       .labels-backdrop .dialog-body{padding:0}
       .label-card{break-inside:avoid;border-color:#999}
     }
+    .ical-section{display:grid;gap:10px}
+    .ical-link-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .ical-link{flex:1 1 320px;min-width:0;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-low);color:var(--md-sys-color-on-surface);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem}
   </style>`;
   }
 });

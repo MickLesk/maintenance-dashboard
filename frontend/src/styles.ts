@@ -655,6 +655,9 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       .labels-backdrop .dialog-body{padding:0}
       .label-card{break-inside:avoid;border-color:#999}
     }
+    .ical-section{display:grid;gap:10px}
+    .ical-link-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .ical-link{flex:1 1 320px;min-width:0;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-low);color:var(--md-sys-color-on-surface);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem}
   </style>`;
   }
 });

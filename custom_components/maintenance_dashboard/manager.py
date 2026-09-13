@@ -18,6 +18,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ICAL_URL,
     BACKUP_MAX_AGE_DAYS,
     BACKUP_RETENTION,
     BACKUP_SECTIONS,
@@ -64,6 +65,7 @@ from .const import (
 )
 from .templates import TEMPLATES, TEMPLATE_PACKS
 from .data_integrity import inspect_integrity, repair_record_ids
+from .ical import build_calendar, feed_events
 from .storage_migrations import migrate_document
 from .recovery import diff_task_records, restore_task_records, rotate_backups
 from .settings import default_settings, deep_merge, normalize_settings
@@ -1602,6 +1604,12 @@ class MaintenanceManager:
                 "calendar_include_snoozed": bool(native_settings.get("calendar_include_snoozed", False)),
                 "calendar_event_duration_minutes": int(native_settings.get("calendar_event_duration_minutes", 60) or 60),
                 "calendar_event_count": len(native_calendar_tasks),
+                "ical_enabled": bool(native_settings.get("ical_enabled", False)),
+                "ical_path": (
+                    f"{ICAL_URL}/{native_settings['ical_token']}.ics"
+                    if native_settings.get("ical_enabled") and native_settings.get("ical_token")
+                    else ""
+                ),
                 "automation_triggers": [
                     "task_status_changed",
                     "task_warning",
@@ -2653,6 +2661,23 @@ class MaintenanceManager:
             for record in self._attachments.values()
             if isinstance(record, dict)
         )
+
+    def ical_feed(self) -> str:
+        """Upcoming due dates as an iCalendar feed.
+
+        Deliberately narrow: name, when, where and how urgent. Notes, costs and
+        photos stay inside Home Assistant.
+        """
+        native = self._settings.get("native_platforms", {})
+        events = feed_events(
+            self._tasks,
+            self.runtime_for_task,
+            duration_minutes=int(_safe_float(native.get("calendar_event_duration_minutes")) or 60),
+            include_snoozed=bool(native.get("calendar_include_snoozed", False)),
+            priority_label=self.priority_label,
+            parse=_parse_dt,
+        )
+        return build_calendar(events, name=translate(self.hass.config.language, "brandName"))
 
     def health_trend(self, *, days: int = 90) -> list[dict[str, Any]]:
         return self._metrics[-max(1, days):]

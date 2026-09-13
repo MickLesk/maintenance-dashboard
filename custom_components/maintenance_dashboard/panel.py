@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import logging
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DOMAIN,
+    ICAL_URL,
     MEDIA_URL,
     PANEL_ELEMENT,
     PANEL_ICON,
@@ -34,6 +36,9 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     # Attachments are served through an authenticated view rather than the
     # static path above, which is public.
     hass.http.register_view(MaintenanceMediaView(hass))
+
+    # Off until a token exists; see MaintenanceICalView.
+    hass.http.register_view(MaintenanceICalView(hass))
 
     frontend.async_register_built_in_panel(
         hass,
@@ -88,3 +93,36 @@ class MaintenanceMediaView(HomeAssistantView):
             headers={"Cache-Control": "private, max-age=3600"},
         )
 
+
+
+class MaintenanceICalView(HomeAssistantView):
+    """Read-only calendar feed for subscribers outside Home Assistant.
+
+    Unauthenticated by design: a calendar client cannot log in. The guard is
+    the token in the URL, which only exists while the feed is switched on and
+    is replaced by clearing it in the settings. A wrong token and a disabled
+    feed answer the same way, so the response tells an unwanted caller nothing.
+    """
+
+    url = f"{ICAL_URL}/{{token}}.ics"
+    name = f"api:{DOMAIN}:ical"
+    requires_auth = False
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def get(self, request: web.Request, token: str) -> web.Response:
+        for manager in (self.hass.data.get(DOMAIN) or {}).values():
+            native = manager.settings.get("native_platforms", {})
+            configured = str(native.get("ical_token") or "")
+            if not native.get("ical_enabled") or not configured:
+                continue
+            if not hmac.compare_digest(configured, str(token or "")):
+                continue
+            return web.Response(
+                text=manager.ical_feed(),
+                content_type="text/calendar",
+                charset="utf-8",
+                headers={"Cache-Control": "no-store"},
+            )
+        return web.Response(status=404)

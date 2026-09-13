@@ -37,6 +37,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
     this._mobileActionTaskId = "";
     this._qualityDialogOpen = false;
     this._labelsDialogOpen = false;
+    this._rotateIcalToken = false;
     this._labelFilter = "";
     this._statusMetricsExpanded = false;
     this._templateImportOpen = false;
