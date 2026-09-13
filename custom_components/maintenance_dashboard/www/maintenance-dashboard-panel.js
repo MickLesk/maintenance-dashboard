@@ -673,6 +673,10 @@ const I18N = Object.freeze({
     "ownCategory": "Eigene Kategorie",
     "packAdded": "Starter-Paket hinzugefügt",
     "pageHeaderActions": "Aktionen",
+    "panelTheme": "Panel-Darstellung",
+    "panelTheme_auto": "Home Assistant folgen",
+    "panelTheme_dark": "Dunkel",
+    "panelTheme_light": "Hell",
     "partBuy": "Nachbestellen",
     "partLastOrdered": "Zuletzt bestellt",
     "partLocation": "Lagerort",
@@ -1592,6 +1596,10 @@ const I18N = Object.freeze({
     "ownCategory": "Custom category",
     "packAdded": "Starter pack added",
     "pageHeaderActions": "Actions",
+    "panelTheme": "Panel appearance",
+    "panelTheme_auto": "Follow Home Assistant",
+    "panelTheme_dark": "Dark",
+    "panelTheme_light": "Light",
     "partBuy": "Reorder",
     "partLastOrdered": "Last ordered",
     "partLocation": "Stored at",
@@ -2264,6 +2272,7 @@ class MaintenanceDashboardPanel extends HTMLElement {
   _html(value) { return String(value ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c])); }
 
   _render() {
+    this._applyTheme();
     const focusState = this._captureFocus();
     const content = this._state ? this._viewHtml() : this._skeletonHtml();
     this.shadowRoot.innerHTML = `${this._styles()}<main class="shell density-${this._html(this._density)}${this._labelsDialogOpen ? " labels-open" : ""}">${this._hero()}${content}${this._dialogHtml()}${this._taskDetailSheetHtml()}${this._qualityDialogHtml()}${this._labelsDialogHtml()}${this._templateImportDialogHtml()}${this._mobileActionSheetHtml()}${this._shortcutsDialogHtml()}${this._historyDialogHtml()}${this._diagnosticsHtml()}${this._dataDialogHtml()}${this._notificationDialogHtml()}${this._templatePreviewHtml()}${this._completionDialogHtml()}${this._bulkPreviewHtml()}${this._assetDialogHtml()}${this._partDialogHtml()}${this._documentDialogHtml()}${this._onboardingDialogHtml()}${this._toastHtml()}</main>`;
@@ -2539,6 +2548,23 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
     event.preventDefault();
     next.focus();
     return true;
+  },
+});
+
+
+// ---- frontend/src/core/theme.ts ----
+// @ts-nocheck
+// The panel brings its own Material palette instead of inheriting the Home
+// Assistant theme, so it has to follow the light/dark choice itself.
+Object.assign(MaintenanceDashboardPanel.prototype, {
+  _panelTheme() {
+    const configured = String(this._state?.settings?.dashboard?.theme || "auto");
+    if (configured === "light" || configured === "dark") return configured;
+    return this.hass?.themes?.darkMode === false ? "light" : "dark";
+  },
+
+  _applyTheme() {
+    this.classList.toggle("theme-light", this._panelTheme() === "light");
   },
 });
 
@@ -4286,7 +4312,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
   // Maps each setting to the tab that holds it, so search can point at it.
   _settingsIndex() {
     return [
-      ["general", ["dashboardLayout", "dashboardDensity", "defaultDueFilter", "showQuickFilters", "rememberDashboardView", "widgets", "costTracking", "defaultCurrency"]],
+      ["general", ["dashboardLayout", "dashboardDensity", "panelTheme", "defaultDueFilter", "showQuickFilters", "rememberDashboardView", "widgets", "costTracking", "defaultCurrency"]],
       ["templates", ["templates", "importTemplates", "exportTemplates"]],
       ["data", ["backupRotation", "maximumBackups", "maximumBackupAge", "dataIntegrity", "auditRetention", "quarantineRetention", "backupRestore"]],
       ["workflow", ["defaultWorkflowState", "showChecklists", "resetChecklistOnCompletion", "completionRequirements"]],
@@ -4345,7 +4371,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       <section class="settings-stack">
         ${activeTab === "general" ? `<article class="panel settings-section" id="dashboard-settings">
           <header><ha-icon icon="mdi:view-dashboard-edit-outline"></ha-icon><div><h3>${this._t("dashboardLayout")}</h3><p>${this._t("dashboardSurfaceHint")}</p></div></header>
-          <div class="settings-section-grid three-column"><label class="field"><span>${this._t("dashboardLayout")}</span><select id="dashboardViewMode">${["cards","compact","timeline"].map(mode => `<option value="${mode}" ${(dashboard.view_mode || "cards") === mode ? "selected" : ""}>${this._t(`${mode}View`)}</option>`).join("")}</select></label><label class="field"><span>${this._t("dashboardDensity")}</span><select id="dashboardDensity"><option value="comfortable" ${(dashboard.density || "comfortable") !== "compact" ? "selected" : ""}>${this._t("densityComfortable")}</option><option value="compact" ${dashboard.density === "compact" ? "selected" : ""}>${this._t("densityCompact")}</option></select></label><label class="field"><span>${this._t("defaultDueFilter")}</span><select id="dashboardDefaultDue">${["all","overdue","today","week","next14","month","next90","later","no_due"].map(value => `<option value="${value}" ${(dashboard.default_due_filter || "all") === value ? "selected" : ""}>${this._dueFilterLabel(value)}</option>`).join("")}</select></label></div>
+          <div class="settings-section-grid three-column"><label class="field"><span>${this._t("dashboardLayout")}</span><select id="dashboardViewMode">${["cards","compact","timeline"].map(mode => `<option value="${mode}" ${(dashboard.view_mode || "cards") === mode ? "selected" : ""}>${this._t(`${mode}View`)}</option>`).join("")}</select></label><label class="field"><span>${this._t("dashboardDensity")}</span><select id="dashboardDensity"><option value="comfortable" ${(dashboard.density || "comfortable") !== "compact" ? "selected" : ""}>${this._t("densityComfortable")}</option><option value="compact" ${dashboard.density === "compact" ? "selected" : ""}>${this._t("densityCompact")}</option></select></label><label class="field"><span>${this._t("panelTheme")}</span><select id="dashboardTheme">${["auto","dark","light"].map(value => `<option value="${value}" ${(dashboard.theme || "auto") === value ? "selected" : ""}>${this._t(`panelTheme_${value}`)}</option>`).join("")}</select></label><label class="field"><span>${this._t("defaultDueFilter")}</span><select id="dashboardDefaultDue">${["all","overdue","today","week","next14","month","next90","later","no_due"].map(value => `<option value="${value}" ${(dashboard.default_due_filter || "all") === value ? "selected" : ""}>${this._dueFilterLabel(value)}</option>`).join("")}</select></label></div>
           <div class="check-grid"><label class="check"><input id="dashboardQuickFilters" type="checkbox" ${dashboard.show_quick_filters !== false ? "checked" : ""}>${this._t("showQuickFilters")}</label><label class="check"><input id="dashboardRememberView" type="checkbox" ${dashboard.remember_last_view !== false ? "checked" : ""}>${this._t("rememberDashboardView")}</label></div>
           <div class="settings-subpanel"><h4>${this._t("modules")}</h4><p class="section-hint">${this._t("modulesHint")}</p><div class="check-grid">${MODULE_KEYS.map(name => `<label class="check" title="${this._t(`module_${name}Hint`)}"><input data-module="${name}" type="checkbox" ${(settings.modules || {})[name] ? "checked" : ""}>${this._t(`module_${name}`)}</label>`).join("")}</div></div>
           <div class="settings-subpanel"><h4>${this._t("widgets")}</h4><p class="section-hint">${this._t("widgetsHint")}</p><div class="check-grid widget-grid">${DASHBOARD_WIDGET_KEYS.map(key => `<label class="check"><input data-widget="${key}" type="checkbox" ${(dashboard.widgets || []).includes(key) ? "checked" : ""}>${this._t(`widget_${key}`)}</label>`).join("")}</div></div>
@@ -6138,6 +6164,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       dashboard: {
         view_mode: this.shadowRoot.getElementById("dashboardViewMode")?.value || currentDashboard.view_mode || "cards",
         density: this.shadowRoot.getElementById("dashboardDensity")?.value || currentDashboard.density || "comfortable",
+        theme: this.shadowRoot.getElementById("dashboardTheme")?.value || currentDashboard.theme || "auto",
         default_due_filter: this.shadowRoot.getElementById("dashboardDefaultDue")?.value || currentDashboard.default_due_filter || "all",
         show_quick_filters: this.shadowRoot.getElementById("dashboardQuickFilters") ? Boolean(this.shadowRoot.getElementById("dashboardQuickFilters")?.checked) : Boolean(currentDashboard.show_quick_filters),
         remember_last_view: this.shadowRoot.getElementById("dashboardRememberView") ? Boolean(this.shadowRoot.getElementById("dashboardRememberView")?.checked) : currentDashboard.remember_last_view !== false,
@@ -7317,6 +7344,27 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       background:var(--md-sys-color-background);
       color:var(--md-sys-color-on-surface);
       font-family:Inter,"Google Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    /* Material 3 baseline light. Same roles, so every rule below keeps working. */
+    :host(.theme-light){
+      --md-sys-color-background:#fef7ff;
+      --md-sys-color-on-background:#1d1b20;
+      --md-sys-color-surface:#fef7ff;
+      --md-sys-color-surface-container-low:#f7f2fa;
+      --md-sys-color-surface-container:#f3edf7;
+      --md-sys-color-surface-container-high:#ece6f0;
+      --md-sys-color-on-surface:#1d1b20;
+      --md-sys-color-on-surface-variant:#49454f;
+      --md-sys-color-primary:#6750a4;
+      --md-sys-color-on-primary:#ffffff;
+      --md-sys-color-primary-container:#eaddff;
+      --md-sys-color-on-primary-container:#21005d;
+      --md-sys-color-outline:#79747e;
+      --md-sys-color-outline-variant:#cac4d0;
+      --md-sys-color-success:#2f6b32;
+      --md-sys-color-warning:#8a5300;
+      --md-sys-color-error:#b3261e;
+      --md-sys-color-info:#0b57d0;
     }
     .shell{max-width:1680px;padding:0 32px 112px;background:var(--md-sys-color-background);color:var(--md-sys-color-on-surface);}
     h1,h2,h3,.compact-brand strong{letter-spacing:0;}

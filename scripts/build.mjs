@@ -10,6 +10,7 @@ const sources = [
   'frontend/src/core/persistence.ts',
   'frontend/src/core/keyboard.ts',
   'frontend/src/core/a11y.ts',
+  'frontend/src/core/theme.ts',
   'frontend/src/core/offline.ts',
   'frontend/src/core/qr.ts',
   'frontend/src/components/app-header.ts',

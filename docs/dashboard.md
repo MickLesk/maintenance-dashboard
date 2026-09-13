@@ -80,3 +80,18 @@ have to reach a CDN to print a label.
 
 A printable yearly report is available from the same page when the documents
 module is on.
+
+## Light and dark
+
+The panel brings its own Material palette rather than inheriting the Home
+Assistant theme, so it follows the light/dark choice explicitly. **Settings →
+Panel appearance** offers:
+
+| Value | Behaviour |
+| --- | --- |
+| `auto` | Follows the Home Assistant theme (default) |
+| `dark` | Always dark |
+| `light` | Always light |
+
+Before this setting the panel was dark in every case, which sat badly inside a
+light Home Assistant.

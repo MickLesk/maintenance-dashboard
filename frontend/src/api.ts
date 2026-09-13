@@ -802,6 +802,7 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       dashboard: {
         view_mode: this.shadowRoot.getElementById("dashboardViewMode")?.value || currentDashboard.view_mode || "cards",
         density: this.shadowRoot.getElementById("dashboardDensity")?.value || currentDashboard.density || "comfortable",
+        theme: this.shadowRoot.getElementById("dashboardTheme")?.value || currentDashboard.theme || "auto",
         default_due_filter: this.shadowRoot.getElementById("dashboardDefaultDue")?.value || currentDashboard.default_due_filter || "all",
         show_quick_filters: this.shadowRoot.getElementById("dashboardQuickFilters") ? Boolean(this.shadowRoot.getElementById("dashboardQuickFilters")?.checked) : Boolean(currentDashboard.show_quick_filters),
         remember_last_view: this.shadowRoot.getElementById("dashboardRememberView") ? Boolean(this.shadowRoot.getElementById("dashboardRememberView")?.checked) : currentDashboard.remember_last_view !== false,

@@ -93,6 +93,27 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
       color:var(--md-sys-color-on-surface);
       font-family:Inter,"Google Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
+    /* Material 3 baseline light. Same roles, so every rule below keeps working. */
+    :host(.theme-light){
+      --md-sys-color-background:#fef7ff;
+      --md-sys-color-on-background:#1d1b20;
+      --md-sys-color-surface:#fef7ff;
+      --md-sys-color-surface-container-low:#f7f2fa;
+      --md-sys-color-surface-container:#f3edf7;
+      --md-sys-color-surface-container-high:#ece6f0;
+      --md-sys-color-on-surface:#1d1b20;
+      --md-sys-color-on-surface-variant:#49454f;
+      --md-sys-color-primary:#6750a4;
+      --md-sys-color-on-primary:#ffffff;
+      --md-sys-color-primary-container:#eaddff;
+      --md-sys-color-on-primary-container:#21005d;
+      --md-sys-color-outline:#79747e;
+      --md-sys-color-outline-variant:#cac4d0;
+      --md-sys-color-success:#2f6b32;
+      --md-sys-color-warning:#8a5300;
+      --md-sys-color-error:#b3261e;
+      --md-sys-color-info:#0b57d0;
+    }
     .shell{max-width:1680px;padding:0 32px 112px;background:var(--md-sys-color-background);color:var(--md-sys-color-on-surface);}
     h1,h2,h3,.compact-brand strong{letter-spacing:0;}
     .hero.top-app-bar{position:sticky;top:0;z-index:120;height:64px;margin:0 -32px 0;padding:0 32px;border-bottom:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-background);}

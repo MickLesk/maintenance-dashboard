@@ -72,6 +72,7 @@ def default_settings() -> dict[str, Any]:
         "dashboard": {
             "view_mode": "cards",
             "density": "comfortable",
+            "theme": "auto",
             "default_due_filter": "all",
             "show_quick_filters": False,
             "remember_last_view": True,
@@ -207,6 +208,8 @@ def normalize_settings(settings: dict[str, Any] | None) -> dict[str, Any]:
         dashboard["view_mode"] = "cards"
     if dashboard.get("density") not in {"comfortable", "compact"}:
         dashboard["density"] = "comfortable"
+    if dashboard.get("theme") not in {"auto", "dark", "light"}:
+        dashboard["theme"] = "auto"
     if dashboard.get("default_due_filter") not in {"all", "overdue", "today", "week", "next14", "month", "next90", "later", "no_due"}:
         dashboard["default_due_filter"] = "all"
     dashboard["show_quick_filters"] = bool(dashboard.get("show_quick_filters", False))
