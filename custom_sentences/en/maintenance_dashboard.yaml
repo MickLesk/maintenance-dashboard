@@ -1,0 +1,17 @@
+language: "en"
+intents:
+  MaintenanceDashboardMarkDone:
+    data:
+      - sentences:
+          - "(maintenance|task) {name} is done"
+          - "(mark|log) {name} as done"
+          - "{name} has been serviced"
+  MaintenanceDashboardDue:
+    data:
+      - sentences:
+          - "(which|what) maintenance is due"
+          - "is [any] maintenance due"
+          - "what needs (maintenance|servicing)"
+lists:
+  name:
+    wildcard: true

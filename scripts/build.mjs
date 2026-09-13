@@ -62,6 +62,8 @@ const BACKEND_KEYS = [
   'notifyFieldPriority', 'notifyFieldCategory', 'notifyFieldRemaining', 'notifyFieldDashboard',
   'notifyActionDone', 'notifyActionSnooze', 'notifyActionOpen',
   'notifyDigestTitle', 'notifyDigestNext',
+  'intentMarkedDone', 'intentTaskNotFound', 'intentCompletedNote',
+  'intentNothingDue', 'intentOneDue', 'intentSeveralDue',
   'notifyRemainingOverdue', 'notifyRemainingLeft', 'notifyRemainingUnknown',
   'notifyTestTitle', 'notifyTestBody', 'notifyChannel', 'notifyCompletedFromAction',
   'notifyCompletedFromTodo', 'notifyCreatedFromTodo',

@@ -126,3 +126,40 @@ maintenance_dashboard.process_notifications
 maintenance_dashboard.cleanup_task_entities
 maintenance_dashboard.clear_notification_history
 ```
+
+## Voice
+
+Maintenance is done with both hands busy, so the integration registers two
+Assist intents:
+
+| Intent | Does |
+| --- | --- |
+| `MaintenanceDashboardMarkDone` | Records the named task as done, with the note "Completed by voice" |
+| `MaintenanceDashboardDue` | Answers which tasks are warning, critical or overdue |
+
+The spoken name is matched against the task names: exact first, then a
+contained name, then the best word overlap. "Heizung" finds "Heizung warten".
+
+Home Assistant only loads sentences from the configuration folder, so the
+sentence files are not installed with the integration. Copy them once:
+
+```bash
+cp -r custom_sentences/* /config/custom_sentences/
+```
+
+Then restart Home Assistant. The shipped sentences cover, in German and
+English:
+
+```text
+Wartung Heizung warten ist erledigt
+markiere Dachrinne reinigen als erledigt
+welche Wartungen sind fällig
+
+mark gutter cleaning as done
+which maintenance is due
+```
+
+`custom_sentences/<language>/maintenance_dashboard.yaml` is an ordinary
+sentence file. Add your own phrasings there; the intent names are what matters.
+
+The response is spoken in the language of the request, falling back to English.

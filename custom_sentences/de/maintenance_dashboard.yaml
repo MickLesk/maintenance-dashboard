@@ -1,0 +1,18 @@
+language: "de"
+intents:
+  MaintenanceDashboardMarkDone:
+    data:
+      - sentences:
+          - "(wartung|aufgabe) {name} [ist] erledigt"
+          - "(markiere|trage) {name} als erledigt [ein]"
+          - "{name} ist gewartet"
+  MaintenanceDashboardDue:
+    data:
+      - sentences:
+          - "welche wartung[en] (ist|sind) fällig"
+          - "was (ist|steht) an wartung (fällig|an)"
+          - "was muss gewartet werden"
+          - "steht [eine] wartung an"
+lists:
+  name:
+    wildcard: true

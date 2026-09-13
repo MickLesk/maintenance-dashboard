@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 FALLBACK_LOCALE = "en"
-SOURCE_DIGEST = "5dea018358090dcb21eba95f82ffc1d73a89c05f6f3e88f1b61bb51ad53a73e9"
+SOURCE_DIGEST = "9d53dceeaa6b8291719c7d3feb0bba72b108aadc5ee859ecff7978b33a436f56"
 
 STRINGS: dict[str, dict[str, str]] = {
     "de": {
@@ -21,6 +21,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "health": "Health-Score",
         "heating": "Heizung",
         "household": "Haushalt",
+        "intentCompletedNote": "Per Sprache erledigt",
+        "intentMarkedDone": "{name} ist als erledigt eingetragen.",
+        "intentNothingDue": "Es ist keine Wartung fällig.",
+        "intentOneDue": "{name} ist fällig.",
+        "intentSeveralDue": "{count} Wartungen sind fällig: {names}.",
+        "intentTaskNotFound": "Ich habe keine Wartung namens {name} gefunden.",
         "it_network": "IT/Netzwerk",
         "notifyActionDone": "Erledigt",
         "notifyActionOpen": "Dashboard öffnen",
@@ -92,6 +98,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "health": "Health score",
         "heating": "Heating",
         "household": "Household",
+        "intentCompletedNote": "Completed by voice",
+        "intentMarkedDone": "{name} is recorded as done.",
+        "intentNothingDue": "No maintenance is due.",
+        "intentOneDue": "{name} is due.",
+        "intentSeveralDue": "{count} maintenance tasks are due: {names}.",
+        "intentTaskNotFound": "I could not find a maintenance task called {name}.",
         "it_network": "IT/Network",
         "notifyActionDone": "Mark done",
         "notifyActionOpen": "Open dashboard",

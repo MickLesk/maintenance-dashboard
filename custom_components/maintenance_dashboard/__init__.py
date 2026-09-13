@@ -10,6 +10,7 @@ from homeassistant.helpers.event import async_track_time_interval
 
 from .const import DOMAIN, PLATFORMS
 from .i18n_generated import translate
+from .intents import async_register_intents
 from .manager import MaintenanceManager
 from .notification_policy import parse_notification_action
 from .panel import async_register_panel, async_unregister_panel
@@ -35,6 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await async_register_panel(hass)
     async_register_websocket(hass)
     async_register_services(hass)
+    async_register_intents(hass)
 
     async def _scheduled_notifications(_now) -> None:
         try:
