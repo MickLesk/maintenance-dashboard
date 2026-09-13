@@ -36,6 +36,11 @@ npm test
 The test step is skipped when the checkout has no `tests/` directory, so the
 distribution repository validates without them.
 
+`tests/_integration.py` imports the integration modules through a package
+object whose `__init__` is never executed, so their relative imports keep
+working without booting Home Assistant, and stubs Home Assistant only when it
+is not installed.
+
 Run individual suites:
 
 ```bash
@@ -52,15 +57,29 @@ npm run validate
 
 The validation command builds the frontend bundle, checks JavaScript syntax, runs all Python unit and structure tests, compiles the integration and validates versions, JSON, YAML, WebSocket contracts and release contents.
 
+Two optional checks cover what neither the type check nor the unit tests can
+see. Both skip cleanly when their dependency is missing, so they stay optional.
+
+Drive the built panel in a real browser:
+
+```bash
+npm i -D playwright && npx playwright install chromium
+npm run verify:panel
+```
+
+It loads the compiled bundle against a fixture Home Assistant and asserts the
+behaviour that only exists at runtime: dialog role and focus trap, Escape and
+Tab handling, the shortcut suppression while typing, deep links, the light and
+dark choice, the QR label sheet and the offline completion queue.
+
 Check the built-in QR encoder against the reference implementation:
 
 ```bash
 pip install qrcode
-node scripts/verify_qr.mjs
+npm run verify:qr
 ```
 
-It compares every module of every version and mask against `python-qrcode`, and
-skips when that package is not installed.
+It compares every module of every version and mask against `python-qrcode`.
 
 The build produces the assets Home Assistant and HACS load:
 
