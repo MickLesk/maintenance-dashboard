@@ -239,12 +239,16 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _icalPath() {
+    return this._state?.native_platforms?.ical_path || "";
+  },
+
   _icalUrl(path) {
     return path ? `${window.location.origin}${path}` : "";
   },
 
   async _copyIcalLink() {
-    const path = this._state?.native_platforms?.ical_path;
+    const path = this._icalPath();
     if (!path) return;
     try {
       await navigator.clipboard.writeText(this._icalUrl(path));

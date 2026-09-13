@@ -4454,10 +4454,10 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
             <label class="check"><input id="calendarIncludeSnoozed" type="checkbox" ${native.calendar_include_snoozed === true ? "checked" : ""}>${this._t("calendarIncludeSnoozed")}</label>
             <label class="check"><input id="icalEnabled" type="checkbox" ${native.ical_enabled === true ? "checked" : ""}>${this._t("icalFeed")}</label>
           </div>
-          ${native.ical_enabled && native.ical_path ? `<div class="dialog-section ical-section">
+          ${native.ical_enabled && this._icalPath() ? `<div class="dialog-section ical-section">
             <p class="section-hint">${this._t("icalFeedHint")}</p>
             <div class="ical-link-row">
-              <input class="ical-link" type="text" readonly value="${this._html(this._icalUrl(native.ical_path))}" aria-label="${this._t("icalFeed")}">
+              <input class="ical-link" type="text" readonly value="${this._html(this._icalUrl(this._icalPath()))}" aria-label="${this._t("icalFeed")}">
               <button class="ghost small" data-action="copy-ical-link"><ha-icon icon="mdi:content-copy"></ha-icon>${this._t("copyLink")}</button>
               <button class="ghost small" data-action="rotate-ical-link"><ha-icon icon="mdi:autorenew"></ha-icon>${this._t("icalNewLink")}</button>
             </div>
@@ -7077,12 +7077,16 @@ Object.assign(MaintenanceDashboardPanel.prototype, {
 
   // Names already used in completions, offered as autocomplete. Derived from
   // history, so nothing extra is stored.
+  _icalPath() {
+    return this._state?.native_platforms?.ical_path || "";
+  },
+
   _icalUrl(path) {
     return path ? `${window.location.origin}${path}` : "";
   },
 
   async _copyIcalLink() {
-    const path = this._state?.native_platforms?.ical_path;
+    const path = this._icalPath();
     if (!path) return;
     try {
       await navigator.clipboard.writeText(this._icalUrl(path));
