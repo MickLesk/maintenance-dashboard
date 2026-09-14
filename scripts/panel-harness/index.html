@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>panel harness</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--primary-background-color);
+    color: var(--primary-text-color);
+    font-family: Roboto, system-ui, sans-serif;
+  }
+  :root {
+    --primary-color: #03a9f4;
+    --accent-color: #ff9800;
+    --primary-text-color: #212121;
+    --secondary-text-color: #727272;
+    --disabled-text-color: #bdbdbd;
+    --primary-background-color: #fafafa;
+    --secondary-background-color: #e5e5e5;
+    --card-background-color: #ffffff;
+    --divider-color: rgba(0,0,0,.12);
+    --error-color: #db4437;
+    --warning-color: #ffa600;
+    --success-color: #43a047;
+    --md-sys-color-primary: #03a9f4;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-error: #db4437;
+    --md-sys-color-warning: #ffa600;
+    --md-sys-color-success: #43a047;
+    --md-sys-color-outline-variant: rgba(0,0,0,.16);
+    --md-sys-color-surface-container: #f3f3f3;
+    --md-sys-color-surface-container-high: #ececec;
+    --md-sys-color-surface-container-highest: #e4e4e4;
+    --md-sys-color-on-surface: #212121;
+    --md-sys-color-on-surface-variant: #5f5f5f;
+  }
+  :root.dark {
+    --primary-color: #38bdf8;
+    --primary-text-color: #e1e1e1;
+    --secondary-text-color: #9b9b9b;
+    --disabled-text-color: #6f6f6f;
+    --primary-background-color: #111111;
+    --secondary-background-color: #202020;
+    --card-background-color: #1c1c1c;
+    --divider-color: rgba(255,255,255,.12);
+    --md-sys-color-outline-variant: rgba(255,255,255,.18);
+    --md-sys-color-surface-container: #232323;
+    --md-sys-color-surface-container-high: #2a2a2a;
+    --md-sys-color-surface-container-highest: #333333;
+    --md-sys-color-on-surface: #e1e1e1;
+    --md-sys-color-on-surface-variant: #b4b4b4;
+  }
+</style>
+</head>
+<body>
+<script>
+  class HaIcon extends HTMLElement {
+    connectedCallback() { this.render(); }
+    static get observedAttributes() { return ["icon"]; }
+    attributeChangedCallback() { this.render(); }
+    render() {
+      if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = `<style>
+        :host { display: inline-flex; align-items: center; justify-content: center;
+                width: var(--mdc-icon-size, 24px); height: var(--mdc-icon-size, 24px); vertical-align: middle; }
+        b { display: block; width: 70%; height: 70%; border-radius: 4px;
+            background: currentColor; opacity: .55; }
+      </style><b></b>`;
+    }
+  }
+  customElements.define("ha-icon", HaIcon);
+  for (const name of ["ha-icon-picker", "ha-textfield", "ha-select"]) {
+    customElements.define(name, class extends HTMLElement {});
+  }
+</script>
+<script src="./fixtures.js"></script>
+<script src="./panel.js"></script>
+<script>
+  (async () => {
+    const fixtures = window.FIXTURES;
+    const params = new URLSearchParams(location.search);
+    if (params.get("theme") === "dark") document.documentElement.classList.add("dark");
+    const panel = document.createElement("maintenance-dashboard-panel");
+    panel.hass = {
+      language: params.get("lang") || "de",
+      locale: { language: params.get("lang") || "de" },
+      states: {},
+      connection: { subscribeEvents: async () => () => {} },
+      themes: { darkMode: params.get("theme") !== "light" },
+      callWS: async msg => {
+        const data = fixtures[msg.type];
+        if (data === undefined) throw new Error(`unstubbed ws call: ${msg.type}`);
+        return JSON.parse(JSON.stringify(data));
+      },
+      callService: async () => {},
+    };
+    document.body.appendChild(panel);
+    window.__panel = panel;
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const view = params.get("view");
+    if (view) { panel._view = view; }
+    const layout = params.get("layout");
+    if (layout) { panel._layoutMode = layout; }
+    panel._render();
+    window.__ready = true;
+  })();
+</script>
+</body>
+</html>
